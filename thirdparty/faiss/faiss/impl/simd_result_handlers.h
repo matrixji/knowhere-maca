@@ -113,7 +113,11 @@ struct SIMDResultHandler {
     const uint16_t* dbias; // table of biases to add to each query
 
     explicit SIMDResultHandler(size_t ntotal, const BitsetView b = nullptr)
-            : ntotal(ntotal), bitset(b), id_map(nullptr), q_map(nullptr), dbias(nullptr) {}
+            : ntotal(ntotal),
+              bitset(b),
+              id_map(nullptr),
+              q_map(nullptr),
+              dbias(nullptr) {}
 
     void set_block_origin(size_t i0, size_t j0) {
         this->i0 = i0;
@@ -455,7 +459,12 @@ struct ReservoirHandler : SIMDResultHandler<C, with_id_map> {
 
     uint64_t times[4];
 
-    ReservoirHandler(size_t nq, size_t ntotal, size_t n, size_t capacity_in, const BitsetView b = nullptr)
+    ReservoirHandler(
+            size_t nq,
+            size_t ntotal,
+            size_t n,
+            size_t capacity_in,
+            const BitsetView b = nullptr)
             : SIMDResultHandler<C, with_id_map>(ntotal, b),
               capacity((capacity_in + 15) & ~15),
               all_ids(nq * capacity),
@@ -563,7 +572,7 @@ struct RangeSearchResultHandler : SIMDResultHandler<C, with_id_map> {
 
     float radius;
     int in_range_num = 0;
-    const float* normalizers;  // for quantization
+    const float* normalizers; // for quantization
 
     RangeSearchResultHandler(
             RangeSearchResult* res,
@@ -582,7 +591,7 @@ struct RangeSearchResultHandler : SIMDResultHandler<C, with_id_map> {
             return;
         }
 
-        this->adjust_with_origin(q, d0, d1);  // this will change the q
+        this->adjust_with_origin(q, d0, d1); // this will change the q
 
         RangeQueryResult& qres = pres.queries.back();
 
@@ -619,8 +628,7 @@ struct RangeSearchResultHandler : SIMDResultHandler<C, with_id_map> {
     void to_flat_arrays(
             float* distances,
             int64_t* labels,
-            const float* normalizers = nullptr) override {
-    }
+            const float* normalizers = nullptr) override {}
 
     void to_result() {
         pres.finalize();

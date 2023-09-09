@@ -174,11 +174,11 @@ void knn_extra_metrics(
         float_maxheap_array_t* res,
         const BitsetView bitset) {
     switch (mt) {
-#define HANDLE_VAR(kw)                                            \
-    case METRIC_##kw: {                                           \
-        VectorDistance<METRIC_##kw> vd = {(size_t)d, metric_arg}; \
-        knn_extra_metrics_template(vd, x, y, nx, ny, res, bitset);\
-        break;                                                    \
+#define HANDLE_VAR(kw)                                             \
+    case METRIC_##kw: {                                            \
+        VectorDistance<METRIC_##kw> vd = {(size_t)d, metric_arg};  \
+        knn_extra_metrics_template(vd, x, y, nx, ny, res, bitset); \
+        break;                                                     \
     }
         HANDLE_VAR(L2);
         HANDLE_VAR(L1);

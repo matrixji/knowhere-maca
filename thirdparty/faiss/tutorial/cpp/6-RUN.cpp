@@ -5,57 +5,56 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include <unistd.h>
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
-#include <cassert>
-#include <unistd.h>
 
 #include <iostream>
 
-#include <faiss/IndexIVF.h>
 #include <faiss/IndexFlat.h>
-#include <faiss/index_io.h>
-#include <faiss/gpu/GpuIndexFlat.h>
-#include <faiss/gpu/StandardGpuResources.h>
+#include <faiss/IndexIVF.h>
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/gpu/GpuCloner.h>
 #include <faiss/gpu/GpuClonerOptions.h>
+#include <faiss/gpu/GpuIndexFlat.h>
 #include <faiss/gpu/GpuIndexIVF.h>
 #include <faiss/gpu/GpuIndexIVFSQHybrid.h>
+#include <faiss/gpu/StandardGpuResources.h>
+#include <faiss/index_io.h>
 
-#include <faiss/impl/FaissAssert.h>
 #include <faiss/impl/AuxIndexStructures.h>
+#include <faiss/impl/FaissAssert.h>
 
 #include <faiss/IndexFlat.h>
-#include <faiss/VectorTransform.h>
 #include <faiss/IndexLSH.h>
 #include <faiss/IndexPQ.h>
+#include <faiss/VectorTransform.h>
 
-#include <faiss/IndexIVFPQ.h>
-#include <faiss/IndexIVFFlat.h>
-#include <faiss/IndexIVFSpectralHash.h>
-#include <faiss/MetaIndexes.h>
-#include <faiss/IndexSQHybrid.h>
-#include <faiss/IndexHNSW.h>
-#include <faiss/invlists/OnDiskInvertedLists.h>
 #include <faiss/IndexBinaryFlat.h>
 #include <faiss/IndexBinaryFromFloat.h>
 #include <faiss/IndexBinaryHNSW.h>
 #include <faiss/IndexBinaryIVF.h>
-#include <faiss/utils/distances.h>
+#include <faiss/IndexHNSW.h>
+#include <faiss/IndexIVFFlat.h>
+#include <faiss/IndexIVFPQ.h>
+#include <faiss/IndexIVFSpectralHash.h>
+#include <faiss/IndexSQHybrid.h>
+#include <faiss/MetaIndexes.h>
 #include <faiss/index_factory.h>
+#include <faiss/invlists/OnDiskInvertedLists.h>
+#include <faiss/utils/distances.h>
 
 using namespace faiss;
 
 #define PRINT_RESULT 0
 std::shared_ptr<faiss::Index> gpu_index_ivf_ptr;
-const int d = 512;                            // dimension
-const int nq = 1000;                        // nb of queries
+const int d = 512;   // dimension
+const int nq = 1000; // nb of queries
 const int nprobe = 1;
 int k = 8;
 
-void
-print_result(const char* unit, long number, long k, long nq, long* I) {
+void print_result(const char* unit, long number, long k, long nq, long* I) {
     printf("%s: I (2 first results)=\n", unit);
     for (int i = 0; i < number; i++) {
         for (int j = 0; j < k; j++)
@@ -71,15 +70,13 @@ print_result(const char* unit, long number, long k, long nq, long* I) {
     }
 }
 
-void
-cpu_executor(faiss::Index* cpu_index, float*& xq) {       // search xq
+void cpu_executor(faiss::Index* cpu_index, float*& xq) { // search xq
     printf("CPU: \n");
     long* I = new long[k * nq];
     float* D = new float[k * nq];
 
     double t4 = getmillisecs();
-    faiss::IndexIVF* ivf_index =
-        dynamic_cast<faiss::IndexIVF*>(cpu_index);
+    faiss::IndexIVF* ivf_index = dynamic_cast<faiss::IndexIVF*>(cpu_index);
     ivf_index->nprobe = nprobe;
     cpu_index->search(nq, xq, k, D, I);
     double t5 = getmillisecs();
@@ -91,10 +88,10 @@ cpu_executor(faiss::Index* cpu_index, float*& xq) {       // search xq
     delete[] D;
 };
 
-void
-hybrid_executor(faiss::Index* cpu_index,
-                faiss::IndexComposition* index_composition,
-                float*& xq) {       // search xq
+void hybrid_executor(
+        faiss::Index* cpu_index,
+        faiss::IndexComposition* index_composition,
+        float*& xq) { // search xq
     printf("HYBRID: \n");
     long* I = new long[k * nq];
     float* D = new float[k * nq];
@@ -103,7 +100,8 @@ hybrid_executor(faiss::Index* cpu_index,
     faiss::IndexIVF* ivf_index = dynamic_cast<faiss::IndexIVF*>(cpu_index);
     ivf_index->nprobe = nprobe;
 
-    faiss::gpu::GpuIndexFlat* is_gpu_flat_index = dynamic_cast<faiss::gpu::GpuIndexFlat*>(ivf_index->quantizer);
+    faiss::gpu::GpuIndexFlat* is_gpu_flat_index =
+            dynamic_cast<faiss::gpu::GpuIndexFlat*>(ivf_index->quantizer);
     if (is_gpu_flat_index == nullptr) {
         delete ivf_index->quantizer;
         ivf_index->quantizer = index_composition->quantizer;
@@ -119,18 +117,20 @@ hybrid_executor(faiss::Index* cpu_index,
     delete[] D;
 };
 
-void
-gpu_executor(faiss::gpu::StandardGpuResources& res,
-             int device_id,
-             faiss::gpu::GpuClonerOptions* option,
-             faiss::IndexComposition* index_composition,
-             float*& xq) {
-    auto tmp_index = faiss::gpu::index_cpu_to_gpu(&res, device_id, index_composition, option);
+void gpu_executor(
+        faiss::gpu::StandardGpuResources& res,
+        int device_id,
+        faiss::gpu::GpuClonerOptions* option,
+        faiss::IndexComposition* index_composition,
+        float*& xq) {
+    auto tmp_index = faiss::gpu::index_cpu_to_gpu(
+            &res, device_id, index_composition, option);
     delete tmp_index;
     double t0 = getmillisecs();
     {
         // cpu to gpu
-        tmp_index = faiss::gpu::index_cpu_to_gpu(&res, device_id, index_composition, option);
+        tmp_index = faiss::gpu::index_cpu_to_gpu(
+                &res, device_id, index_composition, option);
         gpu_index_ivf_ptr = std::shared_ptr<faiss::Index>(tmp_index);
     }
     double t1 = getmillisecs();
@@ -140,8 +140,9 @@ gpu_executor(faiss::gpu::StandardGpuResources& res,
         long* I = new long[k * nq];
         float* D = new float[k * nq];
 
-        faiss::gpu::GpuIndexIVFSQHybrid
-            * gpu_index_ivf_hybrid = dynamic_cast<faiss::gpu::GpuIndexIVFSQHybrid*>(gpu_index_ivf_ptr.get());
+        faiss::gpu::GpuIndexIVFSQHybrid* gpu_index_ivf_hybrid =
+                dynamic_cast<faiss::gpu::GpuIndexIVFSQHybrid*>(
+                        gpu_index_ivf_ptr.get());
         gpu_index_ivf_hybrid->setNumProbes(nprobe);
         for (long i = 0; i < 1; ++i) {
             double t2 = getmillisecs();
@@ -160,11 +161,9 @@ gpu_executor(faiss::gpu::StandardGpuResources& res,
     double t4 = getmillisecs();
 
     printf("GPU:%d total time: %0.2f\n", device_id, t4 - t0);
-
 };
 
-int
-main() {
+int main() {
     const char* filename = "index500k-h.index";
     faiss::gpu::StandardGpuResources res;
 
@@ -208,7 +207,8 @@ main() {
     index_composition0.mode = 0; // only quantizer
 
     // Copy quantizer to GPU 0
-    auto index1 = faiss::gpu::index_cpu_to_gpu(&res, 0, &index_composition0, &option0);
+    auto index1 = faiss::gpu::index_cpu_to_gpu(
+            &res, 0, &index_composition0, &option0);
     delete index1;
 
     faiss::IndexComposition index_composition1;
@@ -217,7 +217,8 @@ main() {
     index_composition1.mode = 0; // only quantizer
 
     // Copy quantizer to GPU 1
-    index1 = faiss::gpu::index_cpu_to_gpu(&res, 1, &index_composition1, &option1);
+    index1 = faiss::gpu::index_cpu_to_gpu(
+            &res, 1, &index_composition1, &option1);
     delete index1;
 
     hybrid_executor(cpu_index, &index_composition0, xq);
@@ -228,9 +229,11 @@ main() {
     index_composition0.mode = 2; // only data
     index_composition1.mode = 2; // only data
 
-    index1 = faiss::gpu::index_cpu_to_gpu(&res, 0, &index_composition0, &option0);
+    index1 = faiss::gpu::index_cpu_to_gpu(
+            &res, 0, &index_composition0, &option0);
     delete index1;
-    index1 = faiss::gpu::index_cpu_to_gpu(&res, 1, &index_composition1, &option1);
+    index1 = faiss::gpu::index_cpu_to_gpu(
+            &res, 1, &index_composition1, &option1);
     delete index1;
 
     gpu_executor(res, 0, &option0, &index_composition0, xq);

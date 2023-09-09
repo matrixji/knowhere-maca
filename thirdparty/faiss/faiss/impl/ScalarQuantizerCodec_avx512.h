@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include <cstdio>
-#include <algorithm>
-#include <omp.h>
 #include <immintrin.h>
+#include <omp.h>
+#include <algorithm>
+#include <cstdio>
 
-#include <faiss/utils/utils.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/impl/ScalarQuantizerCodec_avx.h>
+#include <faiss/utils/utils.h>
 
 namespace faiss {
 
@@ -25,7 +25,7 @@ namespace faiss {
  */
 
 struct Codec8bit_avx512 : public Codec8bit_avx {
-    static __m512 decode_16_components(const uint8_t *code, int i) {
+    static __m512 decode_16_components(const uint8_t* code, int i) {
         uint64_t c8 = *(uint64_t*)(code + i);
         __m256i c8lo = _mm256_cvtepu8_epi32(_mm_set1_epi64x(c8));
         c8 = *(uint64_t*)(code + i + 8);
@@ -42,15 +42,15 @@ struct Codec8bit_avx512 : public Codec8bit_avx {
 };
 
 struct Codec4bit_avx512 : public Codec4bit_avx {
-    static __m512 decode_16_components(const uint8_t *code, int i) {
+    static __m512 decode_16_components(const uint8_t* code, int i) {
         uint64_t c8 = *(uint64_t*)(code + (i >> 1));
         uint64_t mask = 0x0f0f0f0f0f0f0f0f;
         uint64_t c8ev = c8 & mask;
         uint64_t c8od = (c8 >> 4) & mask;
 
         // the 8 lower bytes of c8 contain the values
-        __m128i c16 = _mm_unpacklo_epi8(
-                _mm_set1_epi64x(c8ev), _mm_set1_epi64x(c8od));
+        __m128i c16 =
+                _mm_unpacklo_epi8(_mm_set1_epi64x(c8ev), _mm_set1_epi64x(c8od));
         __m256i c8lo = _mm256_cvtepu8_epi32(c16);
         __m256i c8hi = _mm256_cvtepu8_epi32(_mm_srli_si128(c16, 4));
         __m512i i16 = _mm512_castsi256_si512(c8lo);
@@ -66,23 +66,23 @@ struct Codec4bit_avx512 : public Codec4bit_avx {
 struct Codec6bit_avx512 : public Codec6bit_avx {
     // TODO: can be optimized
     static __m512 decode_16_components(const uint8_t* code, int i) {
-        return _mm512_set_ps
-            (decode_component(code, i + 15),
-             decode_component(code, i + 14),
-             decode_component(code, i + 13),
-             decode_component(code, i + 12),
-             decode_component(code, i + 11),
-             decode_component(code, i + 10),
-             decode_component(code, i + 9),
-             decode_component(code, i + 8),
-             decode_component(code, i + 7),
-             decode_component(code, i + 6),
-             decode_component(code, i + 5),
-             decode_component(code, i + 4),
-             decode_component(code, i + 3),
-             decode_component(code, i + 2),
-             decode_component(code, i + 1),
-             decode_component(code, i + 0));
+        return _mm512_set_ps(
+                decode_component(code, i + 15),
+                decode_component(code, i + 14),
+                decode_component(code, i + 13),
+                decode_component(code, i + 12),
+                decode_component(code, i + 11),
+                decode_component(code, i + 10),
+                decode_component(code, i + 9),
+                decode_component(code, i + 8),
+                decode_component(code, i + 7),
+                decode_component(code, i + 6),
+                decode_component(code, i + 5),
+                decode_component(code, i + 4),
+                decode_component(code, i + 3),
+                decode_component(code, i + 2),
+                decode_component(code, i + 1),
+                decode_component(code, i + 0));
     }
 };
 
@@ -132,7 +132,7 @@ struct QuantizerTemplate_avx512<Codec, false, 1>
 template <class Codec>
 struct QuantizerTemplate_avx512<Codec, false, 8>
         : public QuantizerTemplate_avx<Codec, false, 8> {
-    QuantizerTemplate_avx512(size_t d, const std::vector<float>&trained)
+    QuantizerTemplate_avx512(size_t d, const std::vector<float>& trained)
             : QuantizerTemplate_avx<Codec, false, 8>(d, trained) {}
 };
 
@@ -218,20 +218,30 @@ Quantizer* select_quantizer_1_avx512(
         const std::vector<float>& trained) {
     switch (qtype) {
         case QuantizerType::QT_8bit:
-            return new QuantizerTemplate_avx512<Codec8bit_avx512, false, SIMDWIDTH>(
-                    d, trained);
+            return new QuantizerTemplate_avx512<
+                    Codec8bit_avx512,
+                    false,
+                    SIMDWIDTH>(d, trained);
         case QuantizerType::QT_6bit:
-            return new QuantizerTemplate_avx512<Codec6bit_avx512, false, SIMDWIDTH>(
-                    d, trained);
+            return new QuantizerTemplate_avx512<
+                    Codec6bit_avx512,
+                    false,
+                    SIMDWIDTH>(d, trained);
         case QuantizerType::QT_4bit:
-            return new QuantizerTemplate_avx512<Codec4bit_avx512, false, SIMDWIDTH>(
-                    d, trained);
+            return new QuantizerTemplate_avx512<
+                    Codec4bit_avx512,
+                    false,
+                    SIMDWIDTH>(d, trained);
         case QuantizerType::QT_8bit_uniform:
-            return new QuantizerTemplate_avx512<Codec8bit_avx512, true, SIMDWIDTH>(
-                    d, trained);
+            return new QuantizerTemplate_avx512<
+                    Codec8bit_avx512,
+                    true,
+                    SIMDWIDTH>(d, trained);
         case QuantizerType::QT_4bit_uniform:
-            return new QuantizerTemplate_avx512<Codec4bit_avx512, true, SIMDWIDTH>(
-                    d, trained);
+            return new QuantizerTemplate_avx512<
+                    Codec4bit_avx512,
+                    true,
+                    SIMDWIDTH>(d, trained);
         case QuantizerType::QT_fp16:
             return new QuantizerFP16_avx512<SIMDWIDTH>(d, trained);
         case QuantizerType::QT_8bit_direct:
@@ -272,7 +282,7 @@ struct SimilarityL2_avx512<16> {
 
     const float *y, *yi;
 
-    explicit SimilarityL2_avx512(const float* y): y(y) {}
+    explicit SimilarityL2_avx512(const float* y) : y(y) {}
     __m512 accu16;
 
     void begin_16() {
@@ -293,7 +303,8 @@ struct SimilarityL2_avx512<16> {
     }
 
     float result_16() {
-        __m256 sum0 = _mm512_extractf32x8_ps(accu16, 1) + _mm512_extractf32x8_ps(accu16, 0);
+        __m256 sum0 = _mm512_extractf32x8_ps(accu16, 1) +
+                _mm512_extractf32x8_ps(accu16, 0);
         __m256 sum1 = _mm256_hadd_ps(sum0, sum0);
         __m256 sum2 = _mm256_hadd_ps(sum1, sum1);
         // now add the 0th and 4th component
@@ -350,7 +361,8 @@ struct SimilarityIP_avx512<16> {
     }
 
     float result_16() {
-        __m256 sum0 = _mm512_extractf32x8_ps(accu16, 1) + _mm512_extractf32x8_ps(accu16, 0);
+        __m256 sum0 = _mm512_extractf32x8_ps(accu16, 1) +
+                _mm512_extractf32x8_ps(accu16, 0);
         __m256 sum1 = _mm256_hadd_ps(sum0, sum0);
         __m256 sum2 = _mm256_hadd_ps(sum1, sum1);
         // now add the 0th and 4th component
@@ -400,7 +412,8 @@ struct DCTemplate_avx512<Quantizer, Similarity, 16> : SQDistanceComputer {
         return sim.result_16();
     }
 
-    float compute_code_distance(const uint8_t* code1, const uint8_t* code2) const {
+    float compute_code_distance(const uint8_t* code1, const uint8_t* code2)
+            const {
         Similarity sim(nullptr);
         sim.begin_16();
         for (size_t i = 0; i < quant.d; i += 16) {
@@ -411,12 +424,12 @@ struct DCTemplate_avx512<Quantizer, Similarity, 16> : SQDistanceComputer {
         return sim.result_16();
     }
 
-    void set_query(const float *x) final {
+    void set_query(const float* x) final {
         q = x;
     }
 
     /// compute distance of vector i to current query
-    float operator() (idx_t i) final {
+    float operator()(idx_t i) final {
         return compute_distance(q, codes + i * code_size);
     }
 
@@ -425,7 +438,7 @@ struct DCTemplate_avx512<Quantizer, Similarity, 16> : SQDistanceComputer {
                 codes + i * code_size, codes + j * code_size);
     }
 
-    float query_to_code(const uint8_t * code) const {
+    float query_to_code(const uint8_t* code) const {
         return compute_distance(q, code);
     }
 };
@@ -461,15 +474,16 @@ struct DistanceComputerByte_avx512<Similarity, 16> : SQDistanceComputer {
     DistanceComputerByte_avx512(int d, const std::vector<float>&)
             : d(d), tmp(d) {}
 
-    int compute_code_distance(const uint8_t* code1, const uint8_t* code2) const {
+    int compute_code_distance(const uint8_t* code1, const uint8_t* code2)
+            const {
         // __m256i accu = _mm256_setzero_ps ();
         __m512i accu = _mm512_setzero_si512();
         for (int i = 0; i < d; i += 32) {
             // load 32 bytes, convert to 16 uint16_t
-            __m512i c1 = _mm512_cvtepu8_epi16
-                (_mm256_loadu_si256((__m256i*)(code1 + i)));
-            __m512i c2 = _mm512_cvtepu8_epi16
-                (_mm256_loadu_si256((__m256i*)(code2 + i)));
+            __m512i c1 = _mm512_cvtepu8_epi16(
+                    _mm256_loadu_si256((__m256i*)(code1 + i)));
+            __m512i c2 = _mm512_cvtepu8_epi16(
+                    _mm256_loadu_si256((__m256i*)(code2 + i)));
             __m512i prod32;
             if (Sim::metric_type == METRIC_INNER_PRODUCT) {
                 prod32 = _mm512_madd_epi16(c1, c2);
@@ -505,7 +519,7 @@ struct DistanceComputerByte_avx512<Similarity, 16> : SQDistanceComputer {
     }
 
     /// compute distance of vector i to current query
-    float operator() (idx_t i) final {
+    float operator()(idx_t i) final {
         return compute_distance(q, codes + i * code_size);
     }
 
@@ -545,19 +559,28 @@ SQDistanceComputer* select_distance_computer_avx512(
 
         case QuantizerType::QT_8bit:
             return new DCTemplate_avx512<
-                    QuantizerTemplate_avx512<Codec8bit_avx512, false, SIMDWIDTH>,
+                    QuantizerTemplate_avx512<
+                            Codec8bit_avx512,
+                            false,
+                            SIMDWIDTH>,
                     Sim,
                     SIMDWIDTH>(d, trained);
 
         case QuantizerType::QT_6bit:
             return new DCTemplate_avx512<
-                    QuantizerTemplate_avx512<Codec6bit_avx512, false, SIMDWIDTH>,
+                    QuantizerTemplate_avx512<
+                            Codec6bit_avx512,
+                            false,
+                            SIMDWIDTH>,
                     Sim,
                     SIMDWIDTH>(d, trained);
 
         case QuantizerType::QT_4bit:
             return new DCTemplate_avx512<
-                    QuantizerTemplate_avx512<Codec4bit_avx512, false, SIMDWIDTH>,
+                    QuantizerTemplate_avx512<
+                            Codec4bit_avx512,
+                            false,
+                            SIMDWIDTH>,
                     Sim,
                     SIMDWIDTH>(d, trained);
 
@@ -569,7 +592,8 @@ SQDistanceComputer* select_distance_computer_avx512(
 
         case QuantizerType::QT_8bit_direct:
             if (d % 16 == 0) {
-                return new DistanceComputerByte_avx512<Sim, SIMDWIDTH>(d, trained);
+                return new DistanceComputerByte_avx512<Sim, SIMDWIDTH>(
+                        d, trained);
             } else {
                 return new DCTemplate_avx512<
                         Quantizer8bitDirect_avx512<SIMDWIDTH>,
@@ -599,7 +623,8 @@ InvertedListScanner* sel12_InvertedListScanner_avx512(
     constexpr int SIMDWIDTH = Similarity::simdwidth;
     using QuantizerClass = QuantizerTemplate_avx512<Codec, uniform, SIMDWIDTH>;
     using DCClass = DCTemplate_avx512<QuantizerClass, Similarity, SIMDWIDTH>;
-    return sel2_InvertedListScanner_avx512<DCClass>(sq, quantizer, store_pairs, r);
+    return sel2_InvertedListScanner_avx512<DCClass>(
+            sq, quantizer, store_pairs, r);
 }
 
 template <class Similarity>
@@ -611,20 +636,30 @@ InvertedListScanner* sel1_InvertedListScanner_avx512(
     constexpr int SIMDWIDTH = Similarity::simdwidth;
     switch (sq->qtype) {
         case QuantizerType::QT_8bit_uniform:
-            return sel12_InvertedListScanner_avx512<Similarity, Codec8bit_avx512, true>(
-                    sq, quantizer, store_pairs, r);
+            return sel12_InvertedListScanner_avx512<
+                    Similarity,
+                    Codec8bit_avx512,
+                    true>(sq, quantizer, store_pairs, r);
         case QuantizerType::QT_4bit_uniform:
-            return sel12_InvertedListScanner_avx512<Similarity, Codec4bit_avx512, true>(
-                    sq, quantizer, store_pairs, r);
+            return sel12_InvertedListScanner_avx512<
+                    Similarity,
+                    Codec4bit_avx512,
+                    true>(sq, quantizer, store_pairs, r);
         case QuantizerType::QT_8bit:
-            return sel12_InvertedListScanner_avx512<Similarity, Codec8bit_avx512, false>(
-                    sq, quantizer, store_pairs, r);
+            return sel12_InvertedListScanner_avx512<
+                    Similarity,
+                    Codec8bit_avx512,
+                    false>(sq, quantizer, store_pairs, r);
         case QuantizerType::QT_4bit:
-            return sel12_InvertedListScanner_avx512<Similarity, Codec4bit_avx512, false>(
-                    sq, quantizer, store_pairs, r);
+            return sel12_InvertedListScanner_avx512<
+                    Similarity,
+                    Codec4bit_avx512,
+                    false>(sq, quantizer, store_pairs, r);
         case QuantizerType::QT_6bit:
-            return sel12_InvertedListScanner_avx512<Similarity, Codec6bit_avx512, false>(
-                    sq, quantizer, store_pairs, r);
+            return sel12_InvertedListScanner_avx512<
+                    Similarity,
+                    Codec6bit_avx512,
+                    false>(sq, quantizer, store_pairs, r);
         case QuantizerType::QT_fp16:
             return sel2_InvertedListScanner_avx512<DCTemplate_avx512<
                     QuantizerFP16_avx512<SIMDWIDTH>,

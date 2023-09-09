@@ -94,7 +94,8 @@ void IndexIVFFlat::add_core(
             if (list_no >= 0 && list_no % nt == rank) {
                 idx_t id = xids ? xids[i] : ntotal + i;
                 const float* xi = x + i * d;
-                const float* xi_normal = (x_norms == nullptr) ? nullptr : (x_norms + i);
+                const float* xi_normal =
+                        (x_norms == nullptr) ? nullptr : (x_norms + i);
                 size_t offset = invlists->add_entry(
                         list_no, id, (const uint8_t*)xi, xi_normal);
                 dm_adder.add(i, list_no, offset);
@@ -142,8 +143,8 @@ void IndexIVFFlat::add_core_without_codes(
     }
 
     if (verbose) {
-        printf("IndexIVFFlat::add_core_without_codes: added %" PRId64 " / %" PRId64
-               " vectors\n",
+        printf("IndexIVFFlat::add_core_without_codes: added %" PRId64
+               " / %" PRId64 " vectors\n",
                n_add,
                n);
     }
@@ -327,7 +328,9 @@ IndexIVFFlatCC::IndexIVFFlatCC(
         bool iscosine,
         MetricType metric)
         : is_cosine_(iscosine), IndexIVFFlat(quantizer, d, nlist, metric) {
-    replace_invlists(new ConcurrentArrayInvertedLists(nlist, code_size, ssize, iscosine), true);
+    replace_invlists(
+            new ConcurrentArrayInvertedLists(nlist, code_size, ssize, iscosine),
+            true);
 }
 
 void IndexIVFFlatCC::add_with_ids_without_codes(
@@ -341,15 +344,16 @@ void IndexIVFFlatCC::reconstruct_from_offset_without_codes(
         int64_t list_no,
         int64_t offset,
         float* recons) const {
-    FAISS_THROW_MSG("ivfflat_cc index not support reconstruct_from_offset_without_codes operation");
+    FAISS_THROW_MSG(
+            "ivfflat_cc index not support reconstruct_from_offset_without_codes operation");
 }
 
 void IndexIVFFlatCC::train(idx_t n, const float* x) {
     if (is_cosine_) {
         auto norm_data = std::make_unique<float[]>(n * d);
-        std::memcpy(norm_data.get(), x , n * d * sizeof(float));
+        std::memcpy(norm_data.get(), x, n * d * sizeof(float));
         knowhere::NormalizeVecs(norm_data.get(), n, d);
-        //use normalized data to train codes for cosine
+        // use normalized data to train codes for cosine
         IndexIVF::train(n, norm_data.get());
     } else {
         IndexIVF::train(n, x);
@@ -362,9 +366,9 @@ void IndexIVFFlatCC::add_with_ids(idx_t n, const float* x, const idx_t* xids) {
         auto norm_data = std::make_unique<float[]>(n * d);
         std::memcpy(norm_data.get(), x, n * d * sizeof(float));
         auto norms = knowhere::NormalizeVecs(norm_data.get(), n, d);
-        //use normalized data to calculate coarse id
+        // use normalized data to calculate coarse id
         quantizer->assign(n, norm_data.get(), coarse_idx.get());
-        //add raw data with its norms to inverted list
+        // add raw data with its norms to inverted list
         add_core(n, x, norms.data(), xids, coarse_idx.get());
     } else {
         quantizer->assign(n, x, coarse_idx.get());

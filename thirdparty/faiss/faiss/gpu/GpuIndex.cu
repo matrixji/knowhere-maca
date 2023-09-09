@@ -219,7 +219,7 @@ void GpuIndex::assign(
         DeviceTensor<float, 2, true> dis(
                 resources_.get(),
                 makeTempAlloc(AllocType::Other, stream),
-                {(int) n, (int) 1});
+                {(int)n, (int)1});
 
         // Forward to search
         search(n, x, 1, dis.data(), labels);
@@ -292,24 +292,13 @@ void GpuIndex::search(
 
         if (dataSize >= minPagedSize_) {
             searchFromCpuPaged_(
-                    n,
-                    x,
-                    k,
-                    outDistances.data(),
-                    outLabels.data(),
-                    bitset);
+                    n, x, k, outDistances.data(), outLabels.data(), bitset);
             usePaged = true;
         }
     }
 
     if (!usePaged) {
-        searchNonPaged_(
-                n,
-                x,
-                k,
-                outDistances.data(),
-                outLabels.data(),
-                bitset);
+        searchNonPaged_(n, x, k, outDistances.data(), outLabels.data(), bitset);
     }
 
     // Copy back if necessary

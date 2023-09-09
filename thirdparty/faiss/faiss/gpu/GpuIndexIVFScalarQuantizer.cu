@@ -138,15 +138,16 @@ void GpuIndexIVFScalarQuantizer::copyFromWithoutCodes(
     this->is_trained = true;
 
     // Copy our lists as well
-    index_.reset(new IVFFlat(resources_.get(),
-                             quantizer->getGpuData(),
-                             index->metric_type,
-                             index->metric_arg,
-                             by_residual,
-                             &sq,
-                             ivfSQConfig_.interleavedLayout,
-                             ivfSQConfig_.indicesOptions,
-                             config_.memorySpace));
+    index_.reset(new IVFFlat(
+            resources_.get(),
+            quantizer->getGpuData(),
+            index->metric_type,
+            index->metric_arg,
+            by_residual,
+            &sq,
+            ivfSQConfig_.interleavedLayout,
+            ivfSQConfig_.indicesOptions,
+            config_.memorySpace));
 
     InvertedLists* ivf = index->invlists;
 
@@ -357,12 +358,9 @@ void GpuIndexIVFScalarQuantizer::searchImpl_(
 
     if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
-                resources_.get(),
-                config_.device,
-                nullptr,
-                stream,
-                {0});
-        index_->query(queries, bitsetDevice, nprobe, k, outDistances, outLabels);
+                resources_.get(), config_.device, nullptr, stream, {0});
+        index_->query(
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     } else {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
@@ -370,7 +368,8 @@ void GpuIndexIVFScalarQuantizer::searchImpl_(
                 const_cast<uint8_t*>(bitset.data()),
                 stream,
                 {(int)bitset.byte_size()});
-        index_->query(queries, bitsetDevice, nprobe, k, outDistances, outLabels);
+        index_->query(
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     }
 }
 
@@ -397,12 +396,9 @@ void GpuIndexIVFScalarQuantizer::searchThreadSafeImpl_(
 
     if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
-                resources_.get(),
-                config_.device,
-                nullptr,
-                stream,
-                {0});
-        index_->query(queries, bitsetDevice, nprobe, k, outDistances, outLabels);
+                resources_.get(), config_.device, nullptr, stream, {0});
+        index_->query(
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     } else {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
@@ -410,7 +406,8 @@ void GpuIndexIVFScalarQuantizer::searchThreadSafeImpl_(
                 const_cast<uint8_t*>(bitset.data()),
                 stream,
                 {(int)bitset.byte_size()});
-        index_->query(queries, bitsetDevice, nprobe, k, outDistances, outLabels);
+        index_->query(
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     }
 }
 

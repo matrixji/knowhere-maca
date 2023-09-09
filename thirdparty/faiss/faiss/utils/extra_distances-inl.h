@@ -124,7 +124,7 @@ inline float VectorDistance<METRIC_Jaccard>::operator()(
     const float EPSILON = 0.000001;
     for (size_t i = 0; i < d; i++) {
         float xi = x[i], yi = y[i];
-        if (fabs (xi - yi) < EPSILON) {
+        if (fabs(xi - yi) < EPSILON) {
             accu_num += xi;
             accu_den += xi;
         } else {

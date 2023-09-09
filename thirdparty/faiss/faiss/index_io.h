@@ -62,9 +62,9 @@ Index* read_index(const char* fname, int io_flags = 0);
 Index* read_index(FILE* f, int io_flags = 0);
 Index* read_index(IOReader* reader, int io_flags = 0);
 
-Index* read_index_nm (const char* fname, int io_flags = 0);
-Index* read_index_nm (FILE* f, int io_flags = 0);
-Index* read_index_nm (IOReader* reader, int io_flags = 0);
+Index* read_index_nm(const char* fname, int io_flags = 0);
+Index* read_index_nm(FILE* f, int io_flags = 0);
+Index* read_index_nm(IOReader* reader, int io_flags = 0);
 
 IndexBinary* read_index_binary(const char* fname, int io_flags = 0);
 IndexBinary* read_index_binary(FILE* f, int io_flags = 0);

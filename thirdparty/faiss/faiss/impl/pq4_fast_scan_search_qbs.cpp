@@ -97,14 +97,16 @@ void accumulate_q_4step(
     for (int64_t j0 = 0; j0 < ntotal2; j0 += 32) {
         res.set_block_origin(0, j0);
 
-        // skip computing distances if all vectors inside a block are filtered out
+        // skip computing distances if all vectors inside a block are filtered
+        // out
         bool skip_flag = false;
-        if (!res.bitset.empty()) {  // we have filter here
+        if (!res.bitset.empty()) { // we have filter here
             skip_flag = true;
             for (int64_t jj = 0; jj < std::min<int64_t>(32, ntotal2 - j0);
                  jj++) {
                 auto real_idx = res.adjust_id(0, jj);
-                if (!res.bitset.test(real_idx)) {  // id is not filtered out, can not skip computing
+                if (!res.bitset.test(real_idx)) { // id is not filtered out, can
+                                                  // not skip computing
                     skip_flag = false;
                     break;
                 }
@@ -115,7 +117,7 @@ void accumulate_q_4step(
             continue;
         }
 
-        FixedStorageHandler<SQ, 2> res2;        
+        FixedStorageHandler<SQ, 2> res2;
         const uint8_t* LUT = LUT0;
         kernel_accumulate_block<Q1>(nsq, codes, LUT, res2);
         LUT += Q1 * nsq * 16;

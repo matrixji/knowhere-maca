@@ -30,10 +30,8 @@ struct IndexIVFFlat : IndexIVF {
 
     void arrange_codes(idx_t n, const float* x);
 
-    void add_with_ids_without_codes(
-            idx_t n,
-            const float* x,
-            const idx_t* xids) override;
+    void add_with_ids_without_codes(idx_t n, const float* x, const idx_t* xids)
+            override;
 
     void add_core(
             idx_t n,
@@ -87,7 +85,6 @@ struct IndexIVFFlatCC : IndexIVFFlat {
     /// implemented for all IndexIVF* classes
     void add_with_ids_without_codes(idx_t n, const float* x, const idx_t* xids)
             override;
-
 
     void reconstruct_from_offset_without_codes(
             int64_t list_no,

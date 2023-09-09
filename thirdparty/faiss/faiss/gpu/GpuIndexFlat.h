@@ -25,9 +25,7 @@ class FlatIndex;
 
 struct GpuIndexFlatConfig : public GpuIndexConfig {
     inline GpuIndexFlatConfig()
-            : useFloat16(false),
-              storeTransposed(false),
-              storeInCpu(false) {}
+            : useFloat16(false), storeTransposed(false), storeInCpu(false) {}
 
     /// Whether or not data is stored as float16
     bool useFloat16;

@@ -5,16 +5,16 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <cstdio>
 #include <algorithm>
+#include <cstdio>
 
 #ifdef __SSE__
 #include <immintrin.h>
 #endif
 
-#include <faiss/utils/utils.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/impl/ScalarQuantizerOp.h>
+#include <faiss/utils/utils.h>
 
 namespace faiss {
 

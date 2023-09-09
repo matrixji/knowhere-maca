@@ -59,7 +59,7 @@ inline __device__ Index::idx_t getUserIndex(
     } else if (opt == INDICES_64_BIT) {
         index = ((Index::idx_t*)listIndices[listId])[listOffset];
     } else {
-        index = ((Index::idx_t)listId << 32 | (Index::idx_t) listOffset);
+        index = ((Index::idx_t)listId << 32 | (Index::idx_t)listOffset);
     }
     return index;
 }
@@ -71,13 +71,13 @@ inline __device__ Index::idx_t getListIndex(
         Tensor<int, 2, true>& prefixSumOffsets,
         Tensor<int, 2, true>& topQueryToCentroid,
         IndicesOptions opt) {
-
     // In order to determine the actual user index, we need to first
     // determine what list it was in.
     // We do this by binary search in the prefix sum list.
-    int probe = binarySearchForBucket(prefixSumOffsets[queryId].data(),
-                                      prefixSumOffsets.getSize(1),
-                                      offset);
+    int probe = binarySearchForBucket(
+            prefixSumOffsets[queryId].data(),
+            prefixSumOffsets.getSize(1),
+            offset);
 
     // This is then the probe for the query; we can find the actual
     // list ID from this

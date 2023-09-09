@@ -1,51 +1,50 @@
+#include <unistd.h>
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
-#include <cassert>
-#include <unistd.h>
 
 #include <iostream>
 
 #include <faiss/IndexFlat.h>
-#include <faiss/index_io.h>
+#include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/gpu/GpuIndexFlat.h>
 #include <faiss/gpu/StandardGpuResources.h>
-#include <faiss/gpu/GpuAutoTune.h>
+#include <faiss/index_io.h>
 
-
-#include <faiss/impl/FaissAssert.h>
 #include <faiss/impl/AuxIndexStructures.h>
+#include <faiss/impl/FaissAssert.h>
 
-#include <faiss/IndexFlat.h>
-#include <faiss/VectorTransform.h>
-#include <faiss/IndexLSH.h>
-#include <faiss/IndexPQ.h>
-#include <faiss/IndexIVF.h>
-#include <faiss/IndexIVFPQ.h>
-#include <faiss/IndexIVFFlat.h>
-#include <faiss/IndexIVFSpectralHash.h>
-#include <faiss/MetaIndexes.h>
-#include <faiss/IndexScalarQuantizer.h>
-#include <faiss/IndexHNSW.h>
-#include <faiss/invlists/OnDiskInvertedLists.h>
 #include <faiss/IndexBinaryFlat.h>
 #include <faiss/IndexBinaryFromFloat.h>
 #include <faiss/IndexBinaryHNSW.h>
 #include <faiss/IndexBinaryIVF.h>
+#include <faiss/IndexFlat.h>
+#include <faiss/IndexHNSW.h>
+#include <faiss/IndexIVF.h>
+#include <faiss/IndexIVFFlat.h>
+#include <faiss/IndexIVFPQ.h>
+#include <faiss/IndexIVFSpectralHash.h>
+#include <faiss/IndexLSH.h>
+#include <faiss/IndexPQ.h>
+#include <faiss/IndexScalarQuantizer.h>
+#include <faiss/MetaIndexes.h>
+#include <faiss/VectorTransform.h>
 #include <faiss/gpu/GpuIndexIVFScalarQuantizer.h>
+#include <faiss/invlists/OnDiskInvertedLists.h>
 #include <faiss/utils/utils.h>
-
 
 using namespace faiss;
 
-void
-generate_file(const char *filename,
-                   long nb,
-                   long dimension,
-                   std::string index_desc,
-                   faiss::gpu::StandardGpuResources &res) {
+void generate_file(
+        const char* filename,
+        long nb,
+        long dimension,
+        std::string index_desc,
+        faiss::gpu::StandardGpuResources& res) {
     long size = dimension * nb;
-    float *xb = new float[size];
-    printf("size: %lf(GB)\n", (size * sizeof(float)) / (3 * 1024.0 * 1024 * 1024));
+    float* xb = new float[size];
+    printf("size: %lf(GB)\n",
+           (size * sizeof(float)) / (3 * 1024.0 * 1024 * 1024));
     for (long i = 0; i < nb; i++) {
         for (long j = 0; j < dimension; j++) {
             float rand = drand48();
@@ -53,7 +52,8 @@ generate_file(const char *filename,
         }
     }
 
-    faiss::Index *ori_index = faiss::index_factory(dimension, index_desc.c_str(), faiss::METRIC_L2);
+    faiss::Index* ori_index = faiss::index_factory(
+            dimension, index_desc.c_str(), faiss::METRIC_L2);
     auto device_index = faiss::gpu::index_cpu_to_gpu(&res, 0, ori_index);
 
     assert(!device_index->is_trained);
@@ -61,7 +61,7 @@ generate_file(const char *filename,
     assert(device_index->is_trained);
     device_index->add(nb, xb);
 
-    faiss::Index *cpu_index = faiss::gpu::index_gpu_to_cpu((device_index));
+    faiss::Index* cpu_index = faiss::gpu::index_gpu_to_cpu((device_index));
     faiss::write_index(cpu_index, filename);
     printf("index: %s is stored successfully.\n", filename);
     delete[] xb;
@@ -69,29 +69,33 @@ generate_file(const char *filename,
     return;
 }
 
-faiss::Index *
-get_index(const char *filename) {
+faiss::Index* get_index(const char* filename) {
     return faiss::read_index(filename);
 }
 
-void
-execute_on_gpu(faiss::Index *index, float *xq, long nq, long k, long nprobe,
-    faiss::gpu::StandardGpuResources &res, long* I, float* D) {
-
+void execute_on_gpu(
+        faiss::Index* index,
+        float* xq,
+        long nq,
+        long k,
+        long nprobe,
+        faiss::gpu::StandardGpuResources& res,
+        long* I,
+        float* D) {
     double t0 = getmillisecs();
 
     faiss::gpu::CpuToGpuClonerOptions option;
     option.readonly = true;
-    faiss::Index *tmp_index = faiss::gpu::cpu_to_gpu(&res, 0, index, &option);
-    std::shared_ptr<faiss::Index> gpu_index_ivf_ptr = std::shared_ptr<faiss::Index>(tmp_index);
+    faiss::Index* tmp_index = faiss::gpu::cpu_to_gpu(&res, 0, index, &option);
+    std::shared_ptr<faiss::Index> gpu_index_ivf_ptr =
+            std::shared_ptr<faiss::Index>(tmp_index);
 
     double t1 = getmillisecs();
     printf("CPU to GPU loading time: %0.2f\n", t1 - t0);
 
-
     double t2 = getmillisecs();
-    faiss::gpu::GpuIndexIVF *gpu_index_ivf =
-        dynamic_cast<faiss::gpu::GpuIndexIVF *>(gpu_index_ivf_ptr.get());
+    faiss::gpu::GpuIndexIVF* gpu_index_ivf =
+            dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index_ivf_ptr.get());
     gpu_index_ivf->setNumProbes(nprobe);
 
     gpu_index_ivf_ptr->search(nq, xq, k, D, I);
@@ -99,15 +103,21 @@ execute_on_gpu(faiss::Index *index, float *xq, long nq, long k, long nprobe,
     printf("GPU execution time: %0.2f\n", t3 - t2);
 }
 
-void execute_on_cpu(faiss::Index *index, float* xq, long nq, long k, long nprobe, long* I, float* D) {
-    faiss::IndexIVF* ivf_index =
-        dynamic_cast<faiss::IndexIVF*>(index);
+void execute_on_cpu(
+        faiss::Index* index,
+        float* xq,
+        long nq,
+        long k,
+        long nprobe,
+        long* I,
+        float* D) {
+    faiss::IndexIVF* ivf_index = dynamic_cast<faiss::IndexIVF*>(index);
     ivf_index->nprobe = nprobe;
     index->search(nq, xq, k, D, I);
 }
 
-float *construct_queries(long nq, long dimension) {
-    float *xq = new float[dimension * nq];
+float* construct_queries(long nq, long dimension) {
+    float* xq = new float[dimension * nq];
     for (int i = 0; i < nq; i++) {
         for (int j = 0; j < dimension; j++) {
             xq[dimension * i + j] = drand48();
@@ -116,7 +126,7 @@ float *construct_queries(long nq, long dimension) {
     return xq;
 }
 
-void print_result(long number, long nq, long k, long *I, float *D) {
+void print_result(long number, long nq, long k, long* I, float* D) {
     printf("I (%ld first results)=\n", number);
     for (int i = 0; i < number; i++) {
         for (int j = 0; j < k; j++)
@@ -137,7 +147,7 @@ void faiss_setting() {
 }
 
 int main() {
-    const char *filename = "index5.index";
+    const char* filename = "index5.index";
 
 #if 0
     long dimension = 512;
@@ -183,17 +193,17 @@ int main() {
     return 0;
 #else
     int number = 8;
-    int d = 512;                            // dimension
-    int nq = 1000;                        // nb of queries
+    int d = 512;   // dimension
+    int nq = 1000; // nb of queries
     int nprobe = 16;
-    float *xq = new float[d * nq];
-    for(int i = 0; i < nq; i++) {
-        for(int j = 0; j < d; j++) {
+    float* xq = new float[d * nq];
+    for (int i = 0; i < nq; i++) {
+        for (int j = 0; j < d; j++) {
             xq[d * i + j] = drand48();
-//            printf("%lf ", xq[d * i + j]);
+            //            printf("%lf ", xq[d * i + j]);
         }
-//        xq[d * i] += i / 1000.;
-//        printf("\n");
+        //        xq[d * i] += i / 1000.;
+        //        printf("\n");
     }
     faiss::distance_compute_blas_threshold = 800;
 
@@ -204,11 +214,11 @@ int main() {
 
     const char* index_description = "IVF16384,SQ8";
     // const char* index_description = "IVF3276,Flat";
-//    Index *index_factory (int d, const char *description,
-//                          MetricType metric = METRIC_L2);
+    //    Index *index_factory (int d, const char *description,
+    //                          MetricType metric = METRIC_L2);
 
-    faiss::Index *cpu_index = nullptr;
-    if((access(filename,F_OK))==-1) {
+    faiss::Index* cpu_index = nullptr;
+    if ((access(filename, F_OK)) == -1) {
         long nb = 6000000;
         long dimension = d;
         printf("file doesn't exist, create one\n");
@@ -232,10 +242,12 @@ int main() {
         }
 
         // Using an IVF index
-        // here we specify METRIC_L2, by default it performs inner-product search
+        // here we specify METRIC_L2, by default it performs inner-product
+search
 
-        faiss::Index *ori_index = faiss::index_factory(d, index_description, faiss::METRIC_L2);
-        auto device_index = faiss::gpu::index_cpu_to_gpu(&res, 0, ori_index);
+        faiss::Index *ori_index = faiss::index_factory(d, index_description,
+faiss::METRIC_L2); auto device_index = faiss::gpu::index_cpu_to_gpu(&res, 0,
+ori_index);
 
         gpu_index_ivf_ptr = std::shared_ptr<faiss::Index>(device_index);
 
@@ -244,8 +256,8 @@ int main() {
         assert(device_index->is_trained);
         device_index->add(nb, xb);  // add vectors to the index
 
-        printf("is_trained = %s\n", device_index->is_trained ? "true" : "false");
-        printf("ntotal = %ld\n", device_index->ntotal);
+        printf("is_trained = %s\n", device_index->is_trained ? "true" :
+"false"); printf("ntotal = %ld\n", device_index->ntotal);
 
         cpu_index = faiss::gpu::index_gpu_to_cpu ((device_index));
         faiss::write_index(cpu_index, filename);
@@ -258,31 +270,33 @@ int main() {
 
     {
         // cpu to gpu
-        double t0 = getmillisecs ();
+        double t0 = getmillisecs();
         faiss::gpu::CpuToGpuClonerOptions option;
         option.readonly = true;
-        faiss::Index* tmp_index = faiss::gpu::cpu_to_gpu(&res, 0, cpu_index, &option);
+        faiss::Index* tmp_index =
+                faiss::gpu::cpu_to_gpu(&res, 0, cpu_index, &option);
 
         gpu_index_ivf_ptr = std::shared_ptr<faiss::Index>(tmp_index);
 
         // Gpu index dump
 
-        auto gpu_index_ivf_sq_ptr = dynamic_cast<faiss::gpu::GpuIndexIVFSQ*>(tmp_index);
-//        gpu_index_ivf_sq_ptr->dump();
-        double t1 = getmillisecs ();
+        auto gpu_index_ivf_sq_ptr =
+                dynamic_cast<faiss::gpu::GpuIndexIVFSQ*>(tmp_index);
+        //        gpu_index_ivf_sq_ptr->dump();
+        double t1 = getmillisecs();
         printf("CPU to GPU loading time: %0.2f\n", t1 - t0);
         // // Cpu index dump
-        // auto cpu_index_ivf_sq_ptr = dynamic_cast<faiss::IndexIVF*>(cpu_index);
+        // auto cpu_index_ivf_sq_ptr =
+        // dynamic_cast<faiss::IndexIVF*>(cpu_index);
         // cpu_index_ivf_sq_ptr->dump();
     }
 
-
-    {       // search xq
-        long *I = new long[k * nq];
-        float *D = new float[k * nq];
+    { // search xq
+        long* I = new long[k * nq];
+        float* D = new float[k * nq];
         double t2 = getmillisecs();
         faiss::gpu::GpuIndexIVF* gpu_index_ivf =
-            dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index_ivf_ptr.get());
+                dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index_ivf_ptr.get());
         gpu_index_ivf->setNumProbes(nprobe);
 
         gpu_index_ivf_ptr->search(nq, xq, k, D, I);
@@ -307,31 +321,30 @@ int main() {
         }
 #else
         printf("I (2 first results)=\n");
-        for(int i = 0; i < number; i++) {
-            for(int j = 0; j < k; j++)
+        for (int i = 0; i < number; i++) {
+            for (int j = 0; j < k; j++)
                 printf("%5ld ", I[i * k + j]);
             printf("\n");
         }
 
         printf("I (2 last results)=\n");
-        for(int i = nq - number; i < nq; i++) {
-            for(int j = 0; j < k; j++)
+        for (int i = nq - number; i < nq; i++) {
+            for (int j = 0; j < k; j++)
                 printf("%5ld ", I[i * k + j]);
             printf("\n");
         }
 #endif
-        delete [] I;
-        delete [] D;
+        delete[] I;
+        delete[] D;
     }
     printf("----------------------------------\n");
-    {       // search xq
+    { // search xq
         printf("CPU: \n");
-        long *I = new long[k * nq];
-        float *D = new float[k * nq];
+        long* I = new long[k * nq];
+        float* D = new float[k * nq];
 
         double t4 = getmillisecs();
-        faiss::IndexIVF* ivf_index =
-            dynamic_cast<faiss::IndexIVF*>(cpu_index);
+        faiss::IndexIVF* ivf_index = dynamic_cast<faiss::IndexIVF*>(cpu_index);
         ivf_index->nprobe = nprobe;
         cpu_index->search(nq, xq, k, D, I);
         double t5 = getmillisecs();
@@ -354,25 +367,24 @@ int main() {
 #else
         // print results
         printf("I (2 first results)=\n");
-        for(int i = 0; i < number; i++) {
-            for(int j = 0; j < k; j++)
+        for (int i = 0; i < number; i++) {
+            for (int j = 0; j < k; j++)
                 printf("%5ld ", I[i * k + j]);
             printf("\n");
         }
 
         printf("I (2 last results)=\n");
-        for(int i = nq - number; i < nq; i++) {
-            for(int j = 0; j < k; j++)
+        for (int i = nq - number; i < nq; i++) {
+            for (int j = 0; j < k; j++)
                 printf("%5ld ", I[i * k + j]);
             printf("\n");
         }
 #endif
-        delete [] I;
-        delete [] D;
+        delete[] I;
+        delete[] D;
     }
 
-
-    delete [] xq;
+    delete[] xq;
     return 0;
 #endif
 }

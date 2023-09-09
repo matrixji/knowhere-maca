@@ -74,7 +74,8 @@ int main(int argc, char** argv) {
             if (FLAGS_warp) {
                 runWarpSelect(gpuVal, gpuOutVal, gpuOutInd, FLAGS_dir, k, 0);
             } else {
-                runBlockSelect(gpuVal, bitset, gpuOutVal, gpuOutInd, FLAGS_dir, k, 0);
+                runBlockSelect(
+                        gpuVal, bitset, gpuOutVal, gpuOutInd, FLAGS_dir, k, 0);
             }
         }
     }

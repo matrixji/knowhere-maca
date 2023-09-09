@@ -804,7 +804,8 @@ void IndexBinaryIVF::range_search_preassigned_thread_safe(
 
             for (size_t ik = 0; ik < nprobe; ik++) {
                 scan_list_func(i, ik, qres);
-                if (qres.nres == prev_nres) break;
+                if (qres.nres == prev_nres)
+                    break;
                 prev_nres = qres.nres;
             }
         }

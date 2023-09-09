@@ -200,8 +200,8 @@ InvertedListScanner* ScalarQuantizer::select_InvertedListScanner(
         bool store_pairs,
         bool by_residual) const {
     /* use hook to decide use AVX512 or not */
-    return sq_sel_inv_list_scanner(mt, this, quantizer, d, store_pairs,
-                                   by_residual);
+    return sq_sel_inv_list_scanner(
+            mt, this, quantizer, d, store_pairs, by_residual);
 }
 
 } // namespace faiss

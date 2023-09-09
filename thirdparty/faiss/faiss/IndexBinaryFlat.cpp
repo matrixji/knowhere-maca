@@ -48,10 +48,12 @@ void IndexBinaryFlat::search(
     if (metric_type == METRIC_Jaccard) {
         float* D = reinterpret_cast<float*>(distances);
         float_maxheap_array_t res = {size_t(n), size_t(k), labels, D};
-        binary_knn_hc(METRIC_Jaccard, &res, x, xb.data(), ntotal, code_size, bitset);
+        binary_knn_hc(
+                METRIC_Jaccard, &res, x, xb.data(), ntotal, code_size, bitset);
     } else if (metric_type == METRIC_Hamming) {
         int_maxheap_array_t res = {size_t(n), size_t(k), labels, distances};
-        binary_knn_hc(METRIC_Hamming, &res, x, xb.data(), ntotal, code_size, bitset);
+        binary_knn_hc(
+                METRIC_Hamming, &res, x, xb.data(), ntotal, code_size, bitset);
     } else if (
             metric_type == METRIC_Substructure ||
             metric_type == METRIC_Superstructure) {

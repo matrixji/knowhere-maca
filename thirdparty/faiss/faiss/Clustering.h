@@ -18,8 +18,7 @@ namespace faiss {
 /**
  * The algorithm of clustering
  */
-enum ClusteringType
-{
+enum ClusteringType {
     K_MEANS = 0,
     K_MEANS_PLUS_PLUS,
     K_MEANS_TWO,

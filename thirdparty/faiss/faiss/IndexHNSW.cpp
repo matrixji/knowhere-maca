@@ -931,11 +931,7 @@ void IndexHNSWPQ::train(idx_t n, const float* x) {
  * IndexHNSWSQ implementation
  **************************************************************/
 
-IndexHNSWSQ::IndexHNSWSQ(
-        int d,
-        QuantizerType qtype,
-        int M,
-        MetricType metric)
+IndexHNSWSQ::IndexHNSWSQ(int d, QuantizerType qtype, int M, MetricType metric)
         : IndexHNSW(new IndexScalarQuantizer(d, qtype, metric), M) {
     is_trained = false;
     own_fields = true;

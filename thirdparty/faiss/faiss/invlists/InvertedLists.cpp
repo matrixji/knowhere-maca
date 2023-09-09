@@ -15,25 +15,28 @@
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/utils.h>
 
-//TODO: refactor to decouple dependency between CPU and Cuda, or upgrade faiss
+// TODO: refactor to decouple dependency between CPU and Cuda, or upgrade faiss
 #ifdef USE_GPU
-#include "faiss/gpu/utils/DeviceUtils.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
+#include "faiss/gpu/utils/DeviceUtils.h"
 
 namespace faiss {
 
 /*
- * Use pin memory to build Readonly Inverted list will accelerate cuda memory copy, but it will downgrade cpu ivf search
- * performance. read only inverted list structure will also make ivf search performance not stable. ISSUE 500 mention
- * this problem. Best performance is the original inverted list with non pin memory.
+ * Use pin memory to build Readonly Inverted list will accelerate cuda memory
+ * copy, but it will downgrade cpu ivf search performance. read only inverted
+ * list structure will also make ivf search performance not stable. ISSUE 500
+ * mention this problem. Best performance is the original inverted list with non
+ * pin memory.
  */
 
 PageLockMemory::PageLockMemory(size_t size) : nbytes(size) {
     auto err = cudaHostAlloc(&(this->data), size, 0);
     if (err) {
-        std::string msg =
-            "Fail to alloc page lock memory " + std::to_string(size) + ", err code " + std::to_string((int32_t)err);
+        std::string msg = "Fail to alloc page lock memory " +
+                std::to_string(size) + ", err code " +
+                std::to_string((int32_t)err);
         FAISS_THROW_MSG(msg);
     }
 }
@@ -45,22 +48,23 @@ PageLockMemory::~PageLockMemory() {
 PageLockMemory::PageLockMemory(const PageLockMemory& other) {
     auto err = cudaHostAlloc(&(this->data), other.nbytes, 0);
     if (err) {
-        std::string msg = "Fail to alloc page lock memory " + std::to_string(other.nbytes) + ", err code " +
-                          std::to_string((int32_t)err);
+        std::string msg = "Fail to alloc page lock memory " +
+                std::to_string(other.nbytes) + ", err code " +
+                std::to_string((int32_t)err);
         FAISS_THROW_MSG(msg);
     }
     memcpy(this->data, other.data, other.nbytes);
     this->nbytes = other.nbytes;
 }
 
-PageLockMemory::PageLockMemory(PageLockMemory &&other) {
+PageLockMemory::PageLockMemory(PageLockMemory&& other) {
     this->data = other.data;
     this->nbytes = other.nbytes;
     other.data = nullptr;
     other.nbytes = 0;
 }
 
-}
+} // namespace faiss
 #endif
 
 namespace faiss {
@@ -96,21 +100,23 @@ size_t InvertedLists::get_segment_num(size_t list_no) const {
     return 1;
 }
 
-size_t InvertedLists::get_segment_size(size_t list_no, size_t segment_no) const {
+size_t InvertedLists::get_segment_size(size_t list_no, size_t segment_no)
+        const {
     return list_size(list_no);
 }
 
-size_t InvertedLists::get_segment_offset(size_t list_no, size_t segment_no) const {
+size_t InvertedLists::get_segment_offset(size_t list_no, size_t segment_no)
+        const {
     return 0;
 }
 
-const uint8_t* InvertedLists::get_codes(size_t list_no, size_t offset)
-        const {
+const uint8_t* InvertedLists::get_codes(size_t list_no, size_t offset) const {
     assert(offset < list_size(list_no));
     return get_codes(list_no) + offset * code_size;
 }
 
-const Index::idx_t* InvertedLists::get_ids(size_t list_no, size_t offset) const {
+const Index::idx_t* InvertedLists::get_ids(size_t list_no, size_t offset)
+        const {
     return get_ids(list_no);
 }
 
@@ -122,9 +128,7 @@ size_t InvertedLists::add_entry(
     return add_entries(list_no, 1, &theid, code, code_norm);
 }
 
-size_t InvertedLists::add_entry_without_codes(
-        size_t list_no,
-        idx_t theid) {
+size_t InvertedLists::add_entry_without_codes(size_t list_no, idx_t theid) {
     return add_entries_without_codes(list_no, 1, &theid);
 }
 
@@ -146,7 +150,6 @@ void InvertedLists::update_entry(
 InvertedLists* InvertedLists::to_readonly() {
     return nullptr;
 }
-
 
 const float* InvertedLists::get_code_norms(size_t list_no, size_t offset)
         const {
@@ -176,11 +179,7 @@ void InvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
         size_t list_size = oivf->list_size(i);
         ScopedIds ids(oivf, i);
         if (add_id == 0) {
-            add_entries(
-                    i,
-                    list_size,
-                    ids.get(),
-                    ScopedCodes(oivf, i).get());
+            add_entries(i, list_size, ids.get(), ScopedCodes(oivf, i).get());
         } else {
             std::vector<idx_t> new_ids(list_size);
 
@@ -188,10 +187,7 @@ void InvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
                 new_ids[j] = ids[j] + add_id;
             }
             add_entries(
-                    i,
-                    list_size,
-                    new_ids.data(),
-                    ScopedCodes(oivf, i).get());
+                    i, list_size, new_ids.data(), ScopedCodes(oivf, i).get());
         }
         oivf->resize(i, 0);
     }
@@ -263,7 +259,8 @@ size_t ArrayInvertedLists::add_entries_without_codes(
         size_t list_no,
         size_t n_entry,
         const idx_t* ids_in) {
-    if (n_entry == 0) return 0;
+    if (n_entry == 0)
+        return 0;
     assert(list_no < nlist);
     size_t o = ids[list_no].size();
     ids[list_no].resize(o + n_entry);
@@ -318,7 +315,10 @@ ConcurrentArrayInvertedLists::ConcurrentArrayInvertedLists(
         size_t code_size,
         size_t segment_size,
         bool snorm)
-        : InvertedLists(nlist, code_size), segment_size(segment_size), save_norm(snorm), list_cur(nlist) {
+        : InvertedLists(nlist, code_size),
+          segment_size(segment_size),
+          save_norm(snorm),
+          list_cur(nlist) {
     ids.resize(nlist);
     if (save_norm) {
         code_norms.resize(nlist);
@@ -349,7 +349,9 @@ void ConcurrentArrayInvertedLists::reserve(size_t list_no, size_t capacity) {
     }
 }
 
-void ConcurrentArrayInvertedLists::shrink_to_fit(size_t list_no, size_t capacity) {
+void ConcurrentArrayInvertedLists::shrink_to_fit(
+        size_t list_no,
+        size_t capacity) {
     size_t cur_segment_no = ids[list_no].size();
     size_t target_segment_no = cal_segment_num(capacity);
 
@@ -371,7 +373,8 @@ const uint8_t* ConcurrentArrayInvertedLists::get_codes(size_t list_no) const {
     FAISS_THROW_MSG("not implemented get_codes for non-continuous storage");
 }
 
-const InvertedLists::idx_t* ConcurrentArrayInvertedLists::get_ids(size_t list_no) const {
+const InvertedLists::idx_t* ConcurrentArrayInvertedLists::get_ids(
+        size_t list_no) const {
     FAISS_THROW_MSG("not implemented get_ids for non-continuous storage");
 }
 size_t ConcurrentArrayInvertedLists::add_entries(
@@ -388,31 +391,37 @@ size_t ConcurrentArrayInvertedLists::add_entries(
 
     reserve(list_no, o + n_entry);
 
-    int64_t first_id  = o / segment_size;
+    int64_t first_id = o / segment_size;
     int64_t first_cur = o % segment_size;
 
     if (first_cur + n_entry <= segment_size) {
-        std::memcpy(&ids[list_no][first_id][first_cur], ids_in, n_entry * sizeof(ids_in[0]));
+        std::memcpy(
+                &ids[list_no][first_id][first_cur],
+                ids_in,
+                n_entry * sizeof(ids_in[0]));
         if (save_norm) {
             std::memcpy(
                     &code_norms[list_no][first_id][first_cur],
                     code_norms_in,
                     n_entry * sizeof(float));
         }
-        std::memcpy(&codes[list_no][first_id][first_cur], codes_in, n_entry * code_size);
+        std::memcpy(
+                &codes[list_no][first_id][first_cur],
+                codes_in,
+                n_entry * code_size);
         list_cur[list_no].fetch_add(n_entry);
         return o;
     }
 
-    //process first segment
+    // process first segment
     int64_t first_rest = segment_size - first_cur;
     memcpy(&ids[list_no][first_id][first_cur],
            ids_in,
            first_rest * sizeof(ids_in[0]));
     if (save_norm) {
         memcpy(&code_norms[list_no][first_id][first_cur],
-           code_norms_in,
-           first_rest * sizeof(float));
+               code_norms_in,
+               first_rest * sizeof(float));
     }
     memcpy(&codes[list_no][first_id][first_cur],
            codes_in,
@@ -420,9 +429,9 @@ size_t ConcurrentArrayInvertedLists::add_entries(
     list_cur[list_no].fetch_add(first_rest);
 
     auto rest_entry = n_entry - first_rest;
-    auto entry_cur  = first_rest;
+    auto entry_cur = first_rest;
     auto segment_id = first_id;
-    //process rest segment
+    // process rest segment
     while (rest_entry > 0) {
         segment_id = segment_id + 1;
         if (rest_entry >= segment_size) {
@@ -469,7 +478,7 @@ size_t ConcurrentArrayInvertedLists::add_entries_without_codes(
         const idx_t* ids_in) {
     FAISS_THROW_MSG("not implemented add_entries_without_codes");
 }
-//Not used
+// Not used
 void ConcurrentArrayInvertedLists::update_entries(
         size_t list_no,
         size_t offset,
@@ -482,14 +491,18 @@ void ConcurrentArrayInvertedLists::update_entries(
     assert(list_no < nlist);
     assert(n_entry + offset <= list_size(list_no));
 
-    size_t  first_id  = offset / segment_size;
+    size_t first_id = offset / segment_size;
     int64_t first_cur = offset % segment_size;
     int64_t first_rest = segment_size - first_cur;
 
     if (n_entry <= first_rest) {
-        memcpy(&ids[list_no][first_id][first_cur], ids_in, n_entry * sizeof(ids_in[0]));
-        memcpy(&codes[list_no][first_id][first_cur], codes_in, n_entry * code_size);
-        return ;
+        memcpy(&ids[list_no][first_id][first_cur],
+               ids_in,
+               n_entry * sizeof(ids_in[0]));
+        memcpy(&codes[list_no][first_id][first_cur],
+               codes_in,
+               n_entry * code_size);
+        return;
     }
 
     // update first segment
@@ -536,8 +549,7 @@ InvertedLists* ConcurrentArrayInvertedLists::to_readonly() {
 InvertedLists* ConcurrentArrayInvertedLists::to_readonly_without_codes() {
     return InvertedLists::to_readonly_without_codes();
 }
-ConcurrentArrayInvertedLists::~ConcurrentArrayInvertedLists() {
-}
+ConcurrentArrayInvertedLists::~ConcurrentArrayInvertedLists() {}
 void ConcurrentArrayInvertedLists::resize(size_t list_no, size_t new_size) {
     size_t o = list_size(list_no);
 
@@ -548,7 +560,6 @@ void ConcurrentArrayInvertedLists::resize(size_t list_no, size_t new_size) {
         list_cur[list_no].store(new_size);
         shrink_to_fit(list_no, new_size);
     }
-
 }
 size_t ConcurrentArrayInvertedLists::get_segment_num(size_t list_no) const {
     assert(list_no < nlist);
@@ -588,7 +599,8 @@ const uint8_t* ConcurrentArrayInvertedLists::get_codes(
     assert(offset < list_size(list_no));
     auto segment_no = offset / segment_size;
     auto segment_off = offset % segment_size;
-    return reinterpret_cast<const uint8_t *>(&(codes[list_no][segment_no][segment_off]));
+    return reinterpret_cast<const uint8_t*>(
+            &(codes[list_no][segment_no][segment_off]));
 }
 
 const InvertedLists::idx_t* ConcurrentArrayInvertedLists::get_ids(
@@ -598,9 +610,9 @@ const InvertedLists::idx_t* ConcurrentArrayInvertedLists::get_ids(
     assert(offset < list_size(list_no));
     auto segment_no = offset / segment_size;
     auto segment_off = offset % segment_size;
-    return reinterpret_cast<const idx_t *>(&(ids[list_no][segment_no][segment_off]));
+    return reinterpret_cast<const idx_t*>(
+            &(ids[list_no][segment_no][segment_off]));
 }
-
 
 const uint8_t* ConcurrentArrayInvertedLists::get_single_code(
         size_t list_no,
@@ -608,9 +620,10 @@ const uint8_t* ConcurrentArrayInvertedLists::get_single_code(
     return get_codes(list_no, offset);
 }
 
-InvertedLists::idx_t ConcurrentArrayInvertedLists::get_single_id(size_t list_no, size_t offset)
-        const {
-    auto *pItem = get_ids(list_no, offset);
+InvertedLists::idx_t ConcurrentArrayInvertedLists::get_single_id(
+        size_t list_no,
+        size_t offset) const {
+    auto* pItem = get_ids(list_no, offset);
     return *pItem;
 }
 
@@ -641,13 +654,13 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         size_t nlist,
         size_t code_size,
         const std::vector<size_t>& list_length)
-        : InvertedLists (nlist, code_size),
-          readonly_length(list_length) {
+        : InvertedLists(nlist, code_size), readonly_length(list_length) {
     valid = readonly_length.size() == nlist;
     if (!valid) {
         FAISS_THROW_MSG("Invalid list_length");
     }
-    auto total_size = std::accumulate(readonly_length.begin(), readonly_length.end(), 0);
+    auto total_size =
+            std::accumulate(readonly_length.begin(), readonly_length.end(), 0);
     readonly_offset.reserve(nlist);
 
 #ifndef USE_GPU
@@ -656,7 +669,7 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
 #endif
 
     size_t offset = 0;
-    for (auto i=0; i<readonly_length.size(); ++i) {
+    for (auto i = 0; i < readonly_length.size(); ++i) {
         readonly_offset.emplace_back(offset);
         offset += readonly_length[i];
     }
@@ -664,7 +677,7 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
 
 ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         const ArrayInvertedLists& other)
-        : InvertedLists (other.nlist, other.code_size) {
+        : InvertedLists(other.nlist, other.code_size) {
     readonly_length.resize(nlist);
     readonly_offset.resize(nlist);
     size_t offset = 0;
@@ -686,21 +699,27 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         auto& list_ids = other.ids[i];
         auto& list_codes = other.codes[i];
 
-        uint8_t* ids_ptr = (uint8_t*)(pin_readonly_ids->data) + offset * sizeof(idx_t);
+        uint8_t* ids_ptr =
+                (uint8_t*)(pin_readonly_ids->data) + offset * sizeof(idx_t);
         memcpy(ids_ptr, list_ids.data(), list_ids.size() * sizeof(idx_t));
 
-        uint8_t* codes_ptr = (uint8_t*)(pin_readonly_codes->data) + offset * (this->code_size) * sizeof(uint8_t);
-        memcpy(codes_ptr, list_codes.data(), list_codes.size() * sizeof(uint8_t));
+        uint8_t* codes_ptr = (uint8_t*)(pin_readonly_codes->data) +
+                offset * (this->code_size) * sizeof(uint8_t);
+        memcpy(codes_ptr,
+               list_codes.data(),
+               list_codes.size() * sizeof(uint8_t));
 
         offset += list_ids.size();
     }
 #else
     for (auto i = 0; i < other.ids.size(); i++) {
         auto& list_ids = other.ids[i];
-        readonly_ids.insert(readonly_ids.end(), list_ids.begin(), list_ids.end());
+        readonly_ids.insert(
+                readonly_ids.end(), list_ids.begin(), list_ids.end());
 
         auto& list_codes = other.codes[i];
-        readonly_codes.insert(readonly_codes.end(), list_codes.begin(), list_codes.end());
+        readonly_codes.insert(
+                readonly_codes.end(), list_codes.begin(), list_codes.end());
     }
 #endif
 
@@ -710,7 +729,7 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
 ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         const ArrayInvertedLists& other,
         bool offset_only)
-        : InvertedLists (other.nlist, other.code_size) {
+        : InvertedLists(other.nlist, other.code_size) {
     readonly_length.resize(nlist);
     readonly_offset.resize(nlist);
     size_t offset = 0;
@@ -731,7 +750,8 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
     for (auto i = 0; i < other.ids.size(); i++) {
         auto& list_ids = other.ids[i];
 
-        uint8_t* ids_ptr = (uint8_t*)(pin_readonly_ids->data) + offset * sizeof(idx_t);
+        uint8_t* ids_ptr =
+                (uint8_t*)(pin_readonly_ids->data) + offset * sizeof(idx_t);
         memcpy(ids_ptr, list_ids.data(), list_ids.size() * sizeof(idx_t));
 
         offset += list_ids.size();
@@ -739,18 +759,17 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
 #else
     for (auto i = 0; i < other.ids.size(); i++) {
         auto& list_ids = other.ids[i];
-        readonly_ids.insert(readonly_ids.end(), list_ids.begin(), list_ids.end());
+        readonly_ids.insert(
+                readonly_ids.end(), list_ids.begin(), list_ids.end());
     }
 #endif
 
     valid = true;
 }
 
-ReadOnlyArrayInvertedLists::~ReadOnlyArrayInvertedLists() {
-}
+ReadOnlyArrayInvertedLists::~ReadOnlyArrayInvertedLists() {}
 
-bool
-ReadOnlyArrayInvertedLists::is_valid() {
+bool ReadOnlyArrayInvertedLists::is_valid() {
     return valid;
 }
 
@@ -779,20 +798,16 @@ void ReadOnlyArrayInvertedLists::update_entries(
     FAISS_THROW_MSG("not implemented");
 }
 
-void ReadOnlyArrayInvertedLists::resize(
-        size_t,
-        size_t) {
+void ReadOnlyArrayInvertedLists::resize(size_t, size_t) {
     FAISS_THROW_MSG("not implemented");
 }
 
-size_t ReadOnlyArrayInvertedLists::list_size(
-        size_t list_no) const {
+size_t ReadOnlyArrayInvertedLists::list_size(size_t list_no) const {
     FAISS_ASSERT(list_no < nlist && valid);
     return readonly_length[list_no];
 }
 
-const uint8_t* ReadOnlyArrayInvertedLists::get_codes(
-        size_t list_no) const {
+const uint8_t* ReadOnlyArrayInvertedLists::get_codes(size_t list_no) const {
     FAISS_ASSERT(list_no < nlist && valid);
 #ifdef USE_GPU
     uint8_t* pcodes = (uint8_t*)(pin_readonly_codes->data);

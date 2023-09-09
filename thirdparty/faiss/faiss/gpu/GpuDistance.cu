@@ -79,7 +79,8 @@ void bfKnnConvert(GpuResourcesProvider* prov, const GpuDistanceParams& args) {
             {args.numQueries, args.k == -1 ? args.numVectors : args.k});
 
     // Empty bitset
-    auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(res, device, nullptr, stream, {0});
+    auto bitsetDevice =
+            toDeviceTemporary<uint8_t, 1>(res, device, nullptr, stream, {0});
 
     if (args.k == -1) {
         // Reporting all pairwise distances

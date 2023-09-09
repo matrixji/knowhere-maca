@@ -253,8 +253,9 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
                 WRITEANDCHECK(ails->ids[i].data(), n);
             }
         }
-    } else if (const auto & lca =
-                       dynamic_cast<const ConcurrentArrayInvertedLists *>(ils)) {
+    } else if (
+            const auto& lca =
+                    dynamic_cast<const ConcurrentArrayInvertedLists*>(ils)) {
         uint32_t h = fourcc("ilca");
         WRITE1(h);
         WRITE1(lca->nlist);
@@ -297,16 +298,20 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
                 size_t seg_num = lca->get_segment_num(i);
                 for (size_t j = 0; j < seg_num; j++) {
                     size_t seg_size = lca->get_segment_size(i, j);
-                    WRITEANDCHECK(lca->codes[i][j].data_.data(), seg_size * lca->code_size);
+                    WRITEANDCHECK(
+                            lca->codes[i][j].data_.data(),
+                            seg_size * lca->code_size);
                     WRITEANDCHECK(lca->ids[i][j].data_.data(), seg_size);
                     if (lca->save_norm) {
-                        WRITEANDCHECK(lca->code_norms[i][j].data_.data(), seg_size);
+                        WRITEANDCHECK(
+                                lca->code_norms[i][j].data_.data(), seg_size);
                     }
                 }
             }
         }
-    } else if (const auto & oa =
-            dynamic_cast<const ReadOnlyArrayInvertedLists *>(ils)) {
+    } else if (
+            const auto& oa =
+                    dynamic_cast<const ReadOnlyArrayInvertedLists*>(ils)) {
         uint32_t h = fourcc("iloa");
         WRITE1(h);
         WRITE1(oa->nlist);
@@ -316,16 +321,16 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
         size_t n = oa->pin_readonly_ids->size() / sizeof(InvertedLists::idx_t);
         WRITE1(n);
         WRITEANDCHECK((InvertedLists::idx_t*)oa->pin_readonly_ids->data, n);
-        WRITEANDCHECK((uint8_t*)oa->pin_readonly_codes->data, n * oa->code_size);
+        WRITEANDCHECK(
+                (uint8_t*)oa->pin_readonly_codes->data, n * oa->code_size);
 #else
         size_t n = oa->readonly_ids.size();
         WRITE1(n);
         WRITEANDCHECK(oa->readonly_ids.data(), n);
         WRITEANDCHECK(oa->readonly_codes.data(), n * oa->code_size);
 #endif
-    } else if (const auto & od =
-               dynamic_cast<const OnDiskInvertedLists *>(ils)) {
-        uint32_t h = fourcc ("ilod");
+    } else if (const auto& od = dynamic_cast<const OnDiskInvertedLists*>(ils)) {
+        uint32_t h = fourcc("ilod");
         WRITE1(h);
         WRITE1(ils->nlist);
         WRITE1(ils->code_size);
@@ -334,7 +339,7 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
 
         {
             std::vector<OnDiskInvertedLists::Slot> v(
-                      od->slots.begin(), od->slots.end());
+                    od->slots.begin(), od->slots.end());
             WRITEVECTOR(v);
         }
         {
@@ -349,12 +354,12 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
 }
 
 // write inverted lists for offset-only index
-void write_InvertedLists_nm(const InvertedLists *ils, IOWriter *f) {
+void write_InvertedLists_nm(const InvertedLists* ils, IOWriter* f) {
     if (ils == nullptr) {
         uint32_t h = fourcc("il00");
         WRITE1(h);
-    } else if (const auto & ails =
-               dynamic_cast<const ArrayInvertedLists *>(ils)) {
+    } else if (
+            const auto& ails = dynamic_cast<const ArrayInvertedLists*>(ils)) {
         uint32_t h = fourcc("ilar");
         WRITE1(h);
         WRITE1(ails->nlist);
@@ -370,7 +375,7 @@ void write_InvertedLists_nm(const InvertedLists *ils, IOWriter *f) {
             WRITE1(list_type);
             std::vector<size_t> sizes;
             for (size_t i = 0; i < ails->nlist; i++) {
-                sizes.push_back (ails->ids[i].size());
+                sizes.push_back(ails->ids[i].size());
             }
             WRITEVECTOR(sizes);
         } else {
@@ -380,8 +385,8 @@ void write_InvertedLists_nm(const InvertedLists *ils, IOWriter *f) {
             for (size_t i = 0; i < ails->nlist; i++) {
                 size_t n = ails->ids[i].size();
                 if (n > 0) {
-                    sizes.push_back (i);
-                    sizes.push_back (n);
+                    sizes.push_back(i);
+                    sizes.push_back(n);
                 }
             }
             WRITEVECTOR(sizes);
@@ -394,11 +399,13 @@ void write_InvertedLists_nm(const InvertedLists *ils, IOWriter *f) {
                 WRITEANDCHECK(ails->ids[i].data(), n);
             }
         }
-    } else if (const auto & oa =
-            dynamic_cast<const ReadOnlyArrayInvertedLists *>(ils)) {
+    } else if (
+            const auto& oa =
+                    dynamic_cast<const ReadOnlyArrayInvertedLists*>(ils)) {
         // not going to happen
     } else {
-        fprintf(stderr, "WARN! write_InvertedLists: unsupported invlist type, "
+        fprintf(stderr,
+                "WARN! write_InvertedLists: unsupported invlist type, "
                 "saving null invlist\n");
         uint32_t h = fourcc("il00");
         WRITE1(h);
@@ -585,7 +592,9 @@ void write_index(const Index* idx, IOWriter* f) {
             WRITEVECTOR(tab);
         }
         write_InvertedLists(ivfl->invlists, f);
-    } else if (const IndexIVFFlat* ivfl = dynamic_cast<const IndexIVFFlatCC*>(idx)) {
+    } else if (
+            const IndexIVFFlat* ivfl =
+                    dynamic_cast<const IndexIVFFlatCC*>(idx)) {
         uint32_t h = fourcc("IwFc");
         WRITE1(h);
         write_ivf_header(ivfl, f);
@@ -755,15 +764,15 @@ void write_index(const Index* idx, const char* fname) {
 }
 
 // write index for offset-only index
-void write_index_nm(const Index *idx, IOWriter *f) {
-    if(const IndexIVFFlat * ivfl =
-              dynamic_cast<const IndexIVFFlat *> (idx)) {
+void write_index_nm(const Index* idx, IOWriter* f) {
+    if (const IndexIVFFlat* ivfl = dynamic_cast<const IndexIVFFlat*>(idx)) {
         uint32_t h = fourcc("IwFl");
         WRITE1(h);
         write_ivf_header(ivfl, f);
         write_InvertedLists_nm(ivfl->invlists, f);
-    } else if(const IndexIVFScalarQuantizer * ivsc =
-              dynamic_cast<const IndexIVFScalarQuantizer *> (idx)) {
+    } else if (
+            const IndexIVFScalarQuantizer* ivsc =
+                    dynamic_cast<const IndexIVFScalarQuantizer*>(idx)) {
         uint32_t h = fourcc("IwSq");
         WRITE1(h);
         write_ivf_header(ivsc, f);
@@ -772,16 +781,16 @@ void write_index_nm(const Index *idx, IOWriter *f) {
         WRITE1(ivsc->by_residual);
         write_InvertedLists_nm(ivsc->invlists, f);
     } else {
-      FAISS_THROW_MSG("don't know how to serialize this type of index");
+        FAISS_THROW_MSG("don't know how to serialize this type of index");
     }
 }
 
-void write_index_nm(const Index *idx, FILE *f) {
+void write_index_nm(const Index* idx, FILE* f) {
     FileIOWriter writer(f);
     write_index_nm(idx, &writer);
 }
 
-void write_index_nm(const Index *idx, const char *fname) {
+void write_index_nm(const Index* idx, const char* fname) {
     FileIOWriter writer(fname);
     write_index_nm(idx, &writer);
 }

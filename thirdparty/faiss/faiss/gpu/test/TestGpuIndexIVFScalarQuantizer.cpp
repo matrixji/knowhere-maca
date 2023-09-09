@@ -84,11 +84,7 @@ void runCopyToTest(faiss::QuantizerType qtype) {
     // use garbage values to see if we overwrite then
     IndexFlatL2 cpuQuantizer(1);
     IndexIVFScalarQuantizer cpuIndex(
-            &cpuQuantizer,
-            1,
-            1,
-            QuantizerType::QT_6bit,
-            METRIC_L2);
+            &cpuQuantizer, 1, 1, QuantizerType::QT_6bit, METRIC_L2);
     cpuIndex.nprobe = 1;
 
     gpuIndex.copyTo(&cpuIndex);
@@ -165,13 +161,7 @@ void runCopyFromTest(faiss::QuantizerType qtype) {
     config.device = opt.device;
 
     GpuIndexIVFScalarQuantizer gpuIndex(
-            &res,
-            1,
-            1,
-            QuantizerType::QT_4bit,
-            METRIC_L2,
-            false,
-            config);
+            &res, 1, 1, QuantizerType::QT_4bit, METRIC_L2, false, config);
     gpuIndex.setNumProbes(1);
 
     gpuIndex.copyFrom(&cpuIndex);

@@ -23,7 +23,7 @@ namespace gpu {
 
 // This is warp divergence central, but this is really a final step
 // and happening a small number of times
-//inline __device__ int binarySearchForBucket(
+// inline __device__ int binarySearchForBucket(
 //        int* prefixSumOffsets,
 //        int size,
 //        int val) {
@@ -117,12 +117,13 @@ __global__ void pass2SelectLists(
             // calculated by the original scan.
             int offset = heapIndices[queryId][v];
 
-            index = getListIndex(queryId,
-                                 offset,
-                                 listIndices,
-                                 prefixSumOffsets,
-                                 topQueryToCentroid,
-                                 opt);
+            index = getListIndex(
+                    queryId,
+                    offset,
+                    listIndices,
+                    prefixSumOffsets,
+                    topQueryToCentroid,
+                    opt);
         }
 
         outIndices[queryId][i] = index;
@@ -160,52 +161,101 @@ void runPass2SelectLists(
         return; /* success */                                  \
     } while (0)
 
+#ifndef KNOWHERE_WITH_MACA
+
 #if GPU_MAX_SELECTION_K >= 2048
 
     // block size 128 for k <= 1024, 64 for k = 2048
-#define RUN_PASS_DIR(DIR)                \
-    do {                                 \
-        if (k == 1) {                    \
-            RUN_PASS(128, 1, 1, DIR);    \
-        } else if (k <= 32) {            \
-            RUN_PASS(128, 32, 2, DIR);   \
-        } else if (k <= 64) {            \
-            RUN_PASS(128, 64, 3, DIR);   \
-        } else if (k <= 128) {           \
-            RUN_PASS(128, 128, 3, DIR);  \
-        } else if (k <= 256) {           \
-            RUN_PASS(128, 256, 4, DIR);  \
-        } else if (k <= 512) {           \
-            RUN_PASS(128, 512, 8, DIR);  \
-        } else if (k <= 1024) {          \
-            RUN_PASS(128, 1024, 8, DIR); \
-        } else if (k <= 2048) {          \
-            RUN_PASS(64, 2048, 8, DIR);  \
-        }                                \
+#define RUN_PASS_DIR(DIR)                                    \
+    do {                                                     \
+        if (k == 1) {                                        \
+            RUN_PASS(kSortThreadCount, 1, 1, DIR);           \
+        } else if (k <= 32) {                                \
+            RUN_PASS(kSortThreadCount, 32, 2, DIR);          \
+        } else if (k <= 64) {                                \
+            RUN_PASS(kSortThreadCount, 64, 3, DIR);          \
+        } else if (k <= 128) {                               \
+            RUN_PASS(kSortThreadCount, 128, 3, DIR);         \
+        } else if (k <= 256) {                               \
+            RUN_PASS(kSortThreadCount, 256, 4, DIR);         \
+        } else if (k <= 512) {                               \
+            RUN_PASS(kSortThreadCount, 512, 8, DIR);         \
+        } else if (k <= 1024) {                              \
+            RUN_PASS(kSortThreadCount, 1024, 8, DIR);        \
+        } else if (k <= 2048) {                              \
+            RUN_PASS(kSortThreadCountFor2048, 2048, 8, DIR); \
+        }                                                    \
     } while (0)
 
 #else
 
-#define RUN_PASS_DIR(DIR)                \
-    do {                                 \
-        if (k == 1) {                    \
-            RUN_PASS(128, 1, 1, DIR);    \
-        } else if (k <= 32) {            \
-            RUN_PASS(128, 32, 2, DIR);   \
-        } else if (k <= 64) {            \
-            RUN_PASS(128, 64, 3, DIR);   \
-        } else if (k <= 128) {           \
-            RUN_PASS(128, 128, 3, DIR);  \
-        } else if (k <= 256) {           \
-            RUN_PASS(128, 256, 4, DIR);  \
-        } else if (k <= 512) {           \
-            RUN_PASS(128, 512, 8, DIR);  \
-        } else if (k <= 1024) {          \
-            RUN_PASS(128, 1024, 8, DIR); \
-        }                                \
+#define RUN_PASS_DIR(DIR)                             \
+    do {                                              \
+        if (k == 1) {                                 \
+            RUN_PASS(kSortThreadCount, 1, 1, DIR);    \
+        } else if (k <= 32) {                         \
+            RUN_PASS(kSortThreadCount, 32, 2, DIR);   \
+        } else if (k <= 64) {                         \
+            RUN_PASS(kSortThreadCount, 64, 3, DIR);   \
+        } else if (k <= 128) {                        \
+            RUN_PASS(kSortThreadCount, 128, 3, DIR);  \
+        } else if (k <= 256) {                        \
+            RUN_PASS(kSortThreadCount, 256, 4, DIR);  \
+        } else if (k <= 512) {                        \
+            RUN_PASS(kSortThreadCount, 512, 8, DIR);  \
+        } else if (k <= 1024) {                       \
+            RUN_PASS(kSortThreadCount, 1024, 8, DIR); \
+        }                                             \
     } while (0)
 
 #endif // GPU_MAX_SELECTION_K
+
+#else
+
+#if GPU_MAX_SELECTION_K >= 2048
+
+    // block size 128 for k <= 1024, 64 for k = 2048
+#define RUN_PASS_DIR(DIR)                                    \
+    do {                                                     \
+        if (k == 1) {                                        \
+            RUN_PASS(kSortThreadCount, 1, 1, DIR);           \
+        } else if (k <= 64) {                                \
+            RUN_PASS(kSortThreadCount, 64, 3, DIR);          \
+        } else if (k <= 128) {                               \
+            RUN_PASS(kSortThreadCount, 128, 3, DIR);         \
+        } else if (k <= 256) {                               \
+            RUN_PASS(kSortThreadCount, 256, 4, DIR);         \
+        } else if (k <= 512) {                               \
+            RUN_PASS(kSortThreadCount, 512, 8, DIR);         \
+        } else if (k <= 1024) {                              \
+            RUN_PASS(kSortThreadCount, 1024, 8, DIR);        \
+        } else if (k <= 2048) {                              \
+            RUN_PASS(kSortThreadCountFor2048, 2048, 8, DIR); \
+        }                                                    \
+    } while (0)
+
+#else
+
+#define RUN_PASS_DIR(DIR)                             \
+    do {                                              \
+        if (k == 1) {                                 \
+            RUN_PASS(kSortThreadCount, 1, 1, DIR);    \
+        } else if (k <= 64) {                         \
+            RUN_PASS(kSortThreadCount, 64, 3, DIR);   \
+        } else if (k <= 128) {                        \
+            RUN_PASS(kSortThreadCount, 128, 3, DIR);  \
+        } else if (k <= 256) {                        \
+            RUN_PASS(kSortThreadCount, 256, 4, DIR);  \
+        } else if (k <= 512) {                        \
+            RUN_PASS(kSortThreadCount, 512, 8, DIR);  \
+        } else if (k <= 1024) {                       \
+            RUN_PASS(kSortThreadCount, 1024, 8, DIR); \
+        }                                             \
+    } while (0)
+
+#endif // GPU_MAX_SELECTION_K
+
+#endif // KNOWHERE_WITH_MACA
 
     if (chooseLargest) {
         RUN_PASS_DIR(true);

@@ -113,9 +113,11 @@ void IVFBase::reset() {
     deviceListLengths_.resize(numLists_, 0);
     maxListLength_ = 0;
 
-    deviceData_.reset(new DeviceIVFList(resources_, info));;
+    deviceData_.reset(new DeviceIVFList(resources_, info));
+    ;
     deviceIndices_.reset(new DeviceIVFList(resources_, info));
-    deviceTrained_.reset(new DeviceIVFList(resources_, info));;
+    deviceTrained_.reset(new DeviceIVFList(resources_, info));
+    ;
 }
 
 int IVFBase::getDim() const {
@@ -392,12 +394,14 @@ void IVFBase::copyCodeVectorsFromCpu(
         const float* vecs,
         const Index::idx_t* indices,
         const std::vector<size_t>& list_length) {
-    FAISS_ASSERT_FMT(list_length.size() == this->getNumLists(),
-                     "Expect list size %zu but %zu received!",
-                     this->getNumLists(),
-                     list_length.size());
+    FAISS_ASSERT_FMT(
+            list_length.size() == this->getNumLists(),
+            "Expect list size %zu but %zu received!",
+            this->getNumLists(),
+            list_length.size());
 
-    int64_t numVecs = std::accumulate(list_length.begin(), list_length.end(), 0);
+    int64_t numVecs =
+            std::accumulate(list_length.begin(), list_length.end(), 0);
     if (numVecs == 0) {
         return;
     }
@@ -410,10 +414,15 @@ void IVFBase::copyCodeVectorsFromCpu(
 
     // We only have int32 length representations on the GPU per each
     // list; the length is in sizeof(char)
-    FAISS_ASSERT(deviceData_->data.size() + lengthInBytes <= std::numeric_limits<int64_t>::max());
+    FAISS_ASSERT(
+            deviceData_->data.size() + lengthInBytes <=
+            std::numeric_limits<int64_t>::max());
 
-    deviceData_->data.append((uint8_t *) vecs, lengthInBytes, stream,
-                             true /* exact reserved size */);
+    deviceData_->data.append(
+            (uint8_t*)vecs,
+            lengthInBytes,
+            stream,
+            true /* exact reserved size */);
     copyIndicesFromCpu_(indices, list_length);
     maxListLength_ = 0;
 
@@ -431,7 +440,7 @@ void IVFBase::copyCodeVectorsFromCpu(
         hostPointers[listId] = device_data->data.data();
         maxListLength_ = std::max(maxListLength_, (int)list_length[listId]);
         pos += size;
-        ++ listId;
+        ++listId;
     }
 
     deviceListDataPointers_ = hostPointers;
@@ -449,10 +458,11 @@ void IVFBase::copyCodeVectorsFromCpu(
 void IVFBase::copyIndicesFromCpu_(
         const idx_t* indices,
         const std::vector<size_t>& list_length) {
-    FAISS_ASSERT_FMT(list_length.size() == this->getNumLists(),
-                     "Expect list size %zu but %zu received!",
-                     this->getNumLists(),
-                     list_length.size());
+    FAISS_ASSERT_FMT(
+            list_length.size() == this->getNumLists(),
+            "Expect list size %zu but %zu received!",
+            this->getNumLists(),
+            list_length.size());
 
     auto numVecs = std::accumulate(list_length.begin(), list_length.end(), 0);
 
@@ -463,28 +473,30 @@ void IVFBase::copyIndicesFromCpu_(
         std::vector<int> indices32(numVecs);
         for (size_t i = 0; i < numVecs; ++i) {
             auto ind = indices[i];
-            FAISS_ASSERT(ind <= (Index::idx_t) std::numeric_limits<int>::max());
-            indices32[i] = (int) ind;
+            FAISS_ASSERT(ind <= (Index::idx_t)std::numeric_limits<int>::max());
+            indices32[i] = (int)ind;
         }
 
         bytesPerRecord = sizeof(int);
 
-        deviceIndices_->data.append((uint8_t*)indices32.data(),
-                                    numVecs * bytesPerRecord,
-                                    stream,
-                                    true);
+        deviceIndices_->data.append(
+                (uint8_t*)indices32.data(),
+                numVecs * bytesPerRecord,
+                stream,
+                true);
     } else if (indicesOptions_ == INDICES_64_BIT) {
         bytesPerRecord = sizeof(long);
-        deviceIndices_->data.append((uint8_t*) indices,
-                                    numVecs * bytesPerRecord,
-                                    stream,
-                                    true);
+        deviceIndices_->data.append(
+                (uint8_t*)indices, numVecs * bytesPerRecord, stream, true);
     } else if (indicesOptions_ == INDICES_CPU) {
         FAISS_ASSERT(false);
         size_t listId = 0;
         auto curr_indices = indices;
         for (auto& userIndices : listOffsetToUserIndex_) {
-            userIndices.insert(userIndices.begin(), curr_indices, curr_indices + list_length[listId]);
+            userIndices.insert(
+                    userIndices.begin(),
+                    curr_indices,
+                    curr_indices + list_length[listId]);
             curr_indices += list_length[listId];
             listId++;
         }
@@ -504,7 +516,7 @@ void IVFBase::copyIndicesFromCpu_(
         device_indice->data.reset(data, size, size);
         hostPointers[listId] = device_indice->data.data();
         pos += size;
-        ++ listId;
+        ++listId;
     }
 
     deviceListIndexPointers_ = hostPointers;
@@ -582,8 +594,15 @@ int IVFBase::addVectors(
     DeviceTensor<uint8_t, 1, true> bitset(
             resources_, makeTempAlloc(AllocType::Other, stream), {0});
 
-    quantizer_->query(vecs, bitset, 1, metric_, metricArg_,
-                      listDistance, listIds2d, false);
+    quantizer_->query(
+            vecs,
+            bitset,
+            1,
+            metric_,
+            metricArg_,
+            listDistance,
+            listIds2d,
+            false);
 
     // Copy the lists that we wish to append to back to the CPU
     // FIXME: really this can be into pinned memory and a true async
@@ -790,12 +809,10 @@ int IVFBase::addVectors(
     return numAdded;
 }
 
-void IVFBase::addTrainedDataFromCpu_(
-        const uint8_t* trained,
-        size_t numData) {
-  auto stream = resources_->getDefaultStreamCurrentDevice();
+void IVFBase::addTrainedDataFromCpu_(const uint8_t* trained, size_t numData) {
+    auto stream = resources_->getDefaultStreamCurrentDevice();
 
-  deviceTrained_->data.append((uint8_t *)trained, numData, stream, true);
+    deviceTrained_->data.append((uint8_t*)trained, numData, stream, true);
 }
 
 } // namespace gpu

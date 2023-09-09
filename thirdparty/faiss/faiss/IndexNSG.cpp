@@ -166,7 +166,7 @@ void IndexNSG::add(idx_t n, const float* x) {
         FAISS_THROW_IF_NOT(ntotal == n);
 
         knng.resize(ntotal * (GK + 1));
-        storage->assign(ntotal, x, knng.data()/*, GK + 1*/);
+        storage->assign(ntotal, x, knng.data() /*, GK + 1*/);
 
         // Remove itself
         // - For metric distance, we just need to remove the first neighbor

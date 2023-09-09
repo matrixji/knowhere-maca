@@ -18,7 +18,7 @@ struct IndexIVF;
 struct VectorTransform;
 
 namespace gpu {
-    struct GpuIndexFlat;
+struct GpuIndexFlat;
 }
 
 /* cloning functions */

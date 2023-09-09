@@ -23,8 +23,8 @@
 #include <algorithm>
 
 #include <faiss/FaissHook.h>
-#include <faiss/IndexIVFPQ.h>
 #include <faiss/IndexFlat.h>
+#include <faiss/IndexIVFPQ.h>
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/distances.h>

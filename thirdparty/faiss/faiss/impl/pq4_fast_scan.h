@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include <knowhere/bitsetview.h>
 #include <cstdint>
 #include <cstdlib>
-#include <knowhere/bitsetview.h>
 using knowhere::BitsetView;
 /** PQ4 SIMD packing and accumulation functions
  *

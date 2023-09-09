@@ -101,13 +101,7 @@ void GpuIndex::search_thread_safe(
 
     if (!usePaged) {
         searchThreadSafeNonPaged_(
-                n,
-                x,
-                k,
-                nprobe,
-                outDistances.data(),
-                outLabels.data(),
-                bitset);
+                n, x, k, nprobe, outDistances.data(), outLabels.data(), bitset);
     }
 
     // Copy back if necessary
@@ -134,7 +128,14 @@ void GpuIndex::searchThreadSafeNonPaged_(
             stream,
             {n, (int)this->d});
 
-    searchThreadSafeImpl_(n, vecs.data(), k, nprobe, outDistancesData, outIndicesData, bitset);
+    searchThreadSafeImpl_(
+            n,
+            vecs.data(),
+            k,
+            nprobe,
+            outDistancesData,
+            outIndicesData,
+            bitset);
 }
 
 void GpuIndex::searchThreadSafeFromCpuPaged_(

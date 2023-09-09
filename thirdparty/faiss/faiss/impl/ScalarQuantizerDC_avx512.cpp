@@ -5,8 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <faiss/impl/ScalarQuantizerDC_avx512.h>
 #include <faiss/impl/ScalarQuantizerCodec_avx512.h>
+#include <faiss/impl/ScalarQuantizerDC_avx512.h>
 
 namespace faiss {
 

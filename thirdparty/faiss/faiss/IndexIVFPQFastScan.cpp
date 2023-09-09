@@ -9,11 +9,11 @@
 
 #include <faiss/IndexIVFPQFastScan.h>
 
+#include <omp.h>
 #include <cassert>
 #include <cinttypes>
 #include <cstdio>
 #include <iostream>
-#include <omp.h>
 
 #include <memory>
 
@@ -66,7 +66,14 @@ IndexIVFPQFastScan::IndexIVFPQFastScan(
         bool is_cosine,
         MetricType metric,
         int bbs)
-        : IndexIVFPQFastScan(quantizer, d, nlist, M, nbits_per_idx, metric, bbs) {
+        : IndexIVFPQFastScan(
+                  quantizer,
+                  d,
+                  nlist,
+                  M,
+                  nbits_per_idx,
+                  metric,
+                  bbs) {
     is_cosine_ = is_cosine;
 }
 
@@ -195,7 +202,6 @@ void IndexIVFPQFastScan::train(idx_t n, const float* x) {
         IndexIVF::train(n, x);
     }
 }
-
 
 /*********************************************************
  * Code management functions
@@ -586,14 +592,7 @@ void IndexIVFPQFastScan::range_search_dispatch_implem(
     }
     size_t ndis = 0, nlist_visited = 0;
     range_search_implem_12<Cfloat>(
-            n,
-            x,
-            radius,
-            result,
-            &ndis,
-            &nlist_visited,
-            nprobe,
-            bitset);
+            n, x, radius, result, &ndis, &nlist_visited, nprobe, bitset);
 }
 
 template <bool is_max>
@@ -742,9 +741,11 @@ void IndexIVFPQFastScan::search(
     FAISS_THROW_IF_NOT(k > 0);
 
     if (metric_type == METRIC_L2) {
-        search_dispatch_implem<true>(n, x, k, distances, labels, nullptr, bitset);
+        search_dispatch_implem<true>(
+                n, x, k, distances, labels, nullptr, bitset);
     } else {
-        search_dispatch_implem<false>(n, x, k, distances, labels, nullptr, bitset);
+        search_dispatch_implem<false>(
+                n, x, k, distances, labels, nullptr, bitset);
     }
 }
 
@@ -763,9 +764,11 @@ void IndexIVFPQFastScan::search_thread_safe(
     params.nprobe = final_nprobe;
 
     if (metric_type == METRIC_L2) {
-        search_dispatch_implem<true>(n, x, k, distances, labels, &params, bitset);
+        search_dispatch_implem<true>(
+                n, x, k, distances, labels, &params, bitset);
     } else {
-        search_dispatch_implem<false>(n, x, k, distances, labels, &params, bitset);
+        search_dispatch_implem<false>(
+                n, x, k, distances, labels, &params, bitset);
     }
 }
 
@@ -1275,7 +1278,7 @@ void IndexIVFPQFastScan::range_search_implem_12(
     if (n == 0) { // does not work well with reservoir
         return;
     }
-    FAISS_THROW_IF_NOT(n == 1);  // in knowhere, all request will make nq=1
+    FAISS_THROW_IF_NOT(n == 1); // in knowhere, all request will make nq=1
     FAISS_THROW_IF_NOT(bbs == 32);
 
     std::unique_ptr<idx_t[]> coarse_ids(new idx_t[n * nprobe]);
@@ -1332,7 +1335,8 @@ void IndexIVFPQFastScan::range_search_implem_12(
     TIC;
 
     // prepare the result handlers
-    std::unique_ptr<RangeSearchResultHandler<C, true>> handler(new RangeSearchResultHandler<C, true>(result, radius, 0, bitset));
+    std::unique_ptr<RangeSearchResultHandler<C, true>> handler(
+            new RangeSearchResultHandler<C, true>(result, radius, 0, bitset));
     handler->normalizers = normalizers.get();
     int qbs2 = this->qbs2 ? this->qbs2 : 11;
 
@@ -1386,8 +1390,7 @@ void IndexIVFPQFastScan::range_search_implem_12(
             }
         }
         pq4_pack_LUT_qbs_q_map(
-                qbs, M2, dis_tables.get(), lut_entries.data(),
-                LUT.get());
+                qbs, M2, dis_tables.get(), lut_entries.data(), LUT.get());
 
         // access the inverted list
 
@@ -1404,12 +1407,13 @@ void IndexIVFPQFastScan::range_search_implem_12(
         handler->in_range_num = 0;
         uint64_t tt1 = get_cy();
 
-        pq4_accumulate_loop_qbs(qbs, list_size, M2, codes.get(), LUT.get(), *(handler.get()));
+        pq4_accumulate_loop_qbs(
+                qbs, list_size, M2, codes.get(), LUT.get(), *(handler.get()));
         if (handler->in_range_num <= 0) {
             break;
         }
-        
-    // prepare for next loop
+
+        // prepare for next loop
         i0 = i1;
 
         uint64_t tt2 = get_cy();

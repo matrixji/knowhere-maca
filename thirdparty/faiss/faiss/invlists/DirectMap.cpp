@@ -47,7 +47,8 @@ void DirectMap::set_type(
         size_t segment_num = invlists->get_segment_num(key);
         for (size_t segment_idx = 0; segment_idx < segment_num; segment_idx++) {
             size_t segment_size = invlists->get_segment_size(key, segment_idx);
-            size_t segment_offset = invlists->get_segment_offset(key, segment_idx);
+            size_t segment_offset =
+                    invlists->get_segment_offset(key, segment_idx);
             InvertedLists::ScopedIds idlist(invlists, key, segment_offset);
             if (new_type == Array) {
                 for (long ofs = 0; ofs < segment_size; ofs++) {
@@ -58,7 +59,8 @@ void DirectMap::set_type(
                 }
             } else if (new_type == Hashtable) {
                 for (long ofs = 0; ofs < segment_size; ofs++) {
-                    hashtable[idlist[ofs]] = lo_build(key, segment_offset + ofs);
+                    hashtable[idlist[ofs]] =
+                            lo_build(key, segment_offset + ofs);
                 }
             }
         }

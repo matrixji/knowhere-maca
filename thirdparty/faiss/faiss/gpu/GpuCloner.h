@@ -82,11 +82,11 @@ faiss::Index* index_cpu_to_gpu(
         const GpuClonerOptions* options = nullptr);
 
 faiss::Index* index_cpu_to_gpu_without_codes(
-       GpuResourcesProvider* provider,
+        GpuResourcesProvider* provider,
         int device,
-       const faiss::Index* index,
-       const uint8_t* arranged_data,
-       const GpuClonerOptions* options = nullptr);
+        const faiss::Index* index,
+        const uint8_t* arranged_data,
+        const GpuClonerOptions* options = nullptr);
 
 faiss::Index* index_cpu_to_gpu_multiple(
         std::vector<GpuResourcesProvider*>& provider,

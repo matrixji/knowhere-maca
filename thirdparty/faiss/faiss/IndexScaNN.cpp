@@ -100,13 +100,7 @@ void IndexScaNN::search_thread_safe(
     FAISS_THROW_IF_NOT(base);
 
     base->search_thread_safe(
-            n,
-            x,
-            k_base,
-            base_distances,
-            base_labels,
-            nprobe,
-            bitset);
+            n, x, k_base, base_distances, base_labels, nprobe, bitset);
     for (idx_t i = 0; i < n * k_base; i++)
         assert(base_labels[i] >= -1 && base_labels[i] < ntotal);
 
@@ -144,7 +138,7 @@ void IndexScaNN::range_search_thread_safe(
         float radius,
         RangeSearchResult* result,
         const BitsetView bitset) const {
-    FAISS_THROW_IF_NOT(n == 1);  // currently knowhere will split nq to 1
+    FAISS_THROW_IF_NOT(n == 1); // currently knowhere will split nq to 1
 
     FAISS_THROW_IF_NOT(is_trained);
     auto base = dynamic_cast<const IndexIVFPQFastScan*>(base_index);
@@ -156,7 +150,8 @@ void IndexScaNN::range_search_thread_safe(
     auto rf = dynamic_cast<const IndexFlat*>(refine_index);
     FAISS_THROW_IF_NOT(rf);
 
-    rf->compute_distance_subset(n, x, result->lims[1], result->distances, result->labels);
+    rf->compute_distance_subset(
+            n, x, result->lims[1], result->distances, result->labels);
 
     idx_t current = 0;
     for (idx_t i = 0; i < result->lims[1]; ++i) {

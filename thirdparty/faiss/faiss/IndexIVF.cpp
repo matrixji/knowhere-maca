@@ -18,7 +18,6 @@
 #include <iostream>
 #include <memory>
 
-
 #include <knowhere/utils.h>
 
 #include <faiss/utils/hamming.h>
@@ -235,8 +234,7 @@ void IndexIVF::add_sa_codes(idx_t n, const uint8_t* codes, const idx_t* xids) {
         const uint8_t* code = codes + (code_size + coarse_size) * i;
         idx_t list_no = decode_listno(code);
         idx_t id = xids ? xids[i] : ntotal + i;
-        size_t ofs =
-                invlists->add_entry(list_no, id, code + coarse_size);
+        size_t ofs = invlists->add_entry(list_no, id, code + coarse_size);
         dm_adder.add(i, list_no, ofs);
     }
     ntotal += n;
@@ -294,7 +292,10 @@ void IndexIVF::add_core(
             if (list_no >= 0 && list_no % nt == rank) {
                 idx_t id = xids ? xids[i] : ntotal + i;
                 size_t ofs = invlists->add_entry(
-                        list_no, id, flat_codes.get() + i * code_size, x_norms  == nullptr ? nullptr : x_norms + i);
+                        list_no,
+                        id,
+                        flat_codes.get() + i * code_size,
+                        x_norms == nullptr ? nullptr : x_norms + i);
 
                 dm_adder.add(i, list_no, ofs);
 
@@ -572,18 +573,25 @@ void IndexIVF::search_preassigned(
             size_t scan_cnt = 0;
             try {
                 size_t segment_num = invlists->get_segment_num(key);
-                for (size_t segment_idx = 0; segment_idx < segment_num; segment_idx++) {
-                    size_t segment_size = invlists->get_segment_size(key, segment_idx);
-                    size_t segment_offset = invlists->get_segment_offset(key, segment_idx);
-                    InvertedLists::ScopedCodes scodes(invlists, key, segment_offset);
+                for (size_t segment_idx = 0; segment_idx < segment_num;
+                     segment_idx++) {
+                    size_t segment_size =
+                            invlists->get_segment_size(key, segment_idx);
+                    size_t segment_offset =
+                            invlists->get_segment_offset(key, segment_idx);
+                    InvertedLists::ScopedCodes scodes(
+                            invlists, key, segment_offset);
                     std::unique_ptr<InvertedLists::ScopedIds> sids;
                     const Index::idx_t* ids = nullptr;
 
-                    auto scode_norms = std::make_unique<InvertedLists::ScopedCodeNorms>(invlists, key, segment_offset);
+                    auto scode_norms =
+                            std::make_unique<InvertedLists::ScopedCodeNorms>(
+                                    invlists, key, segment_offset);
                     const float* code_norms = scode_norms->get();
 
                     if (!store_pairs) {
-                        sids.reset(new InvertedLists::ScopedIds(invlists, key, segment_offset));
+                        sids.reset(new InvertedLists::ScopedIds(
+                                invlists, key, segment_offset));
                         ids = sids->get();
                     }
                     nheap += scanner->scan_codes(
@@ -839,13 +847,18 @@ void IndexIVF::range_search_preassigned(
 
             try {
                 size_t segment_num = invlists->get_segment_num(key);
-                for (size_t segment_idx = 0; segment_idx < segment_num; segment_idx++) {
-                    size_t segment_size = invlists->get_segment_size(key, segment_idx);
-                    size_t segment_offset = invlists->get_segment_offset(key, segment_idx);
+                for (size_t segment_idx = 0; segment_idx < segment_num;
+                     segment_idx++) {
+                    size_t segment_size =
+                            invlists->get_segment_size(key, segment_idx);
+                    size_t segment_offset =
+                            invlists->get_segment_offset(key, segment_idx);
 
-                    InvertedLists::ScopedCodes scodes(invlists, key, segment_offset);
+                    InvertedLists::ScopedCodes scodes(
+                            invlists, key, segment_offset);
                     InvertedLists::ScopedIds ids(invlists, key, segment_offset);
-                    InvertedLists::ScopedCodeNorms scode_norms(invlists, key, segment_offset);
+                    InvertedLists::ScopedCodeNorms scode_norms(
+                            invlists, key, segment_offset);
 
                     scanner->set_list(key, coarse_dis[i * nprobe + ik]);
                     nlistv++;
@@ -876,7 +889,8 @@ void IndexIVF::range_search_preassigned(
 
             for (size_t ik = 0; ik < nprobe; ik++) {
                 scan_list_func(i, ik, qres);
-                if (qres.nres == prev_nres) break;
+                if (qres.nres == prev_nres)
+                    break;
                 prev_nres = qres.nres;
             }
         }

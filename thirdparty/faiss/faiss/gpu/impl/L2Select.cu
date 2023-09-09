@@ -57,9 +57,10 @@ __global__ void l2SelectMin1(
         for (int row = rowStart; row < productDistances.getSize(0); ++row) {
             for (int col = threadIdx.x; col < productDistances.getSize(1);
                  col += blockDim.x) {
-                if (bitsetEmpty || (!(bitset[col >> 3] & (0x1 << (col & 0x7))))) {
-                    distance[0] = Math<T>::add(centroidDistances[col],
-                                               productDistances[row][col]);
+                if (bitsetEmpty ||
+                    (!(bitset[col >> 3] & (0x1 << (col & 0x7))))) {
+                    distance[0] = Math<T>::add(
+                            centroidDistances[col], productDistances[row][col]);
                 } else {
                     distance[0] = (T)(1.0 / 0.0);
                 }
@@ -167,8 +168,7 @@ __global__ void l2SelectMinK(
 
     for (; i < limit; i += blockDim.x) {
         if (bitsetEmpty || (!(bitset[i >> 3] & (0x1 << (i & 0x7))))) {
-            v = Math<T>::add(centroidDistances[i],
-                             productDistances[row][i]);
+            v = Math<T>::add(centroidDistances[i], productDistances[row][i]);
             heap.addThreadQ(v, i);
         }
         heap.checkThreadQ();
@@ -176,8 +176,7 @@ __global__ void l2SelectMinK(
 
     if (i < productDistances.getSize(1)) {
         if (bitsetEmpty || (!(bitset[i >> 3] & (0x1 << (i & 0x7))))) {
-            v = Math<T>::add(centroidDistances[i],
-                             productDistances[row][i]);
+            v = Math<T>::add(centroidDistances[i], productDistances[row][i]);
             heap.addThreadQ(v, i);
         }
     }
@@ -237,22 +236,26 @@ void runL2SelectMin(
 
         // block size 128 for everything <= 1024
         if (k <= 32) {
-            RUN_L2_SELECT_BITSET(128, 32, 2);
+#ifndef KNOWHERE_WITH_MACA
+            RUN_L2_SELECT_BITSET(kSortThreadCount, 32, 2);
+#else
+            RUN_L2_SELECT_BITSET(kSortThreadCount, 64, 3);
+#endif
         } else if (k <= 64) {
-            RUN_L2_SELECT_BITSET(128, 64, 3);
+            RUN_L2_SELECT_BITSET(kSortThreadCount, 64, 3);
         } else if (k <= 128) {
-            RUN_L2_SELECT_BITSET(128, 128, 3);
+            RUN_L2_SELECT_BITSET(kSortThreadCount, 128, 3);
         } else if (k <= 256) {
-            RUN_L2_SELECT_BITSET(128, 256, 4);
+            RUN_L2_SELECT_BITSET(kSortThreadCount, 256, 4);
         } else if (k <= 512) {
-            RUN_L2_SELECT_BITSET(128, 512, 8);
+            RUN_L2_SELECT_BITSET(kSortThreadCount, 512, 8);
         } else if (k <= 1024) {
-            RUN_L2_SELECT_BITSET(128, 1024, 8);
+            RUN_L2_SELECT_BITSET(kSortThreadCount, 1024, 8);
 
 #if GPU_MAX_SELECTION_K >= 2048
         } else if (k <= 2048) {
             // smaller block for less shared memory
-            RUN_L2_SELECT_BITSET(64, 2048, 8);
+            RUN_L2_SELECT_BITSET(kSortThreadCountFor2048, 2048, 8);
 #endif
 
         } else {

@@ -68,8 +68,8 @@ void GpuIndexIVF::init_() {
 }
 
 GpuIndexIVF::~GpuIndexIVF() {
-   if (remove_quantizer == 1) {
-      delete quantizer;
+    if (remove_quantizer == 1) {
+        delete quantizer;
     }
 }
 

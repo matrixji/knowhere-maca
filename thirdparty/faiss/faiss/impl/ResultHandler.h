@@ -119,8 +119,11 @@ struct HeapResultHandler {
     }
 
     /// add results for query i0..i1 and j0..j1
-    void add_results(size_t j0, size_t j1, const T* dis_tab,
-                     BitsetView bitset = nullptr) {
+    void add_results(
+            size_t j0,
+            size_t j1,
+            const T* dis_tab,
+            BitsetView bitset = nullptr) {
 #pragma omp parallel for
         for (int64_t i = i0; i < i1; i++) {
             T* heap_dis = heap_dis_tab + i * k;
@@ -140,14 +143,14 @@ struct HeapResultHandler {
     }
 
     void add_single_result(size_t i, T dis, TI idx) {
-        T * heap_dis = heap_dis_tab + i * k;
-        TI * heap_ids = heap_ids_tab + i * k;
+        T* heap_dis = heap_dis_tab + i * k;
+        TI* heap_ids = heap_ids_tab + i * k;
         if (C::cmp(heap_dis[0], dis)) {
             heap_replace_top<C>(k, heap_dis, heap_ids, dis, idx);
         }
     }
 
-    void merge(size_t i, HeapResultHandler &rh) {
+    void merge(size_t i, HeapResultHandler& rh) {
         const size_t ki = i * k, uj = ki + k;
         for (size_t j = ki; j < uj; ++j) {
             add_single_result(i, rh.heap_dis_tab[j], rh.heap_ids_tab[j]);
@@ -162,9 +165,13 @@ struct HeapResultHandler {
         }
     }
 
-    void copy_from(HeapResultHandler &res, size_t x_from, size_t size) {
-        memcpy(heap_dis_tab + x_from * k, res.heap_dis_tab, size * k * sizeof(T));
-        memcpy(heap_ids_tab + x_from * k, res.heap_ids_tab, size * k * sizeof(TI));
+    void copy_from(HeapResultHandler& res, size_t x_from, size_t size) {
+        memcpy(heap_dis_tab + x_from * k,
+               res.heap_dis_tab,
+               size * k * sizeof(T));
+        memcpy(heap_ids_tab + x_from * k,
+               res.heap_ids_tab,
+               size * k * sizeof(TI));
     }
 };
 
@@ -273,8 +280,8 @@ struct ReservoirResultHandler {
         }
     }
 
-    ReservoirResultHandler *clone_n(int n, size_t block_x) {
-        ReservoirResultHandler *ress = new ReservoirResultHandler[n];
+    ReservoirResultHandler* clone_n(int n, size_t block_x) {
+        ReservoirResultHandler* ress = new ReservoirResultHandler[n];
 
         T* global_heap_dis_tab = (T*)malloc(block_x * k * n * sizeof(T));
         TI* global_heap_ids_tab = (TI*)malloc(block_x * k * n * sizeof(TI));
@@ -360,8 +367,11 @@ struct ReservoirResultHandler {
     }
 
     /// add results for query i0..i1 and j0..j1
-    void add_results(size_t j0, size_t j1, const T* dis_tab,
-                     BitsetView bitset = nullptr) {
+    void add_results(
+            size_t j0,
+            size_t j1,
+            const T* dis_tab,
+            BitsetView bitset = nullptr) {
         // maybe parallel for
 #pragma omp parallel for
         for (int64_t i = i0; i < i1; i++) {
@@ -380,7 +390,7 @@ struct ReservoirResultHandler {
         reservoirs[i - i0].add(dis, idx);
     }
 
-    void merge(size_t i, ReservoirResultHandler &rh) {
+    void merge(size_t i, ReservoirResultHandler& rh) {
         const size_t ii = i - rh.i0;
         const T* dis = rh.reservoir_dis.data() + ii * rh.capacity;
         const TI* ids = rh.reservoir_ids.data() + ii * rh.capacity;
@@ -398,9 +408,13 @@ struct ReservoirResultHandler {
         }
     }
 
-    void copy_from(ReservoirResultHandler &res, size_t x_from, size_t size) {
-        memcpy(heap_dis_tab + x_from * k, res.heap_dis_tab, size * k * sizeof(T));
-        memcpy(heap_ids_tab + x_from * k, res.heap_ids_tab, size * k * sizeof(TI));
+    void copy_from(ReservoirResultHandler& res, size_t x_from, size_t size) {
+        memcpy(heap_dis_tab + x_from * k,
+               res.heap_dis_tab,
+               size * k * sizeof(T));
+        memcpy(heap_ids_tab + x_from * k,
+               res.heap_ids_tab,
+               size * k * sizeof(TI));
     }
 };
 
@@ -471,8 +485,11 @@ struct RangeSearchResultHandler {
 
     /// add results for query i0..i1 and j0..j1
 
-    void add_results(size_t j0, size_t j1, const T* dis_tab,
-                     BitsetView bitset = nullptr) {
+    void add_results(
+            size_t j0,
+            size_t j1,
+            const T* dis_tab,
+            BitsetView bitset = nullptr) {
         RangeSearchPartialResult* pres;
         // there is one RangeSearchPartialResult structure per j0
         // (= block of columns of the large distance matrix)

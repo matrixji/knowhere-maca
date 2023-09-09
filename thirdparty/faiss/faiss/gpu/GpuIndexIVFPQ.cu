@@ -369,18 +369,9 @@ void GpuIndexIVFPQ::searchImpl_(
 
     if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
-                resources_.get(),
-                config_.device,
-                nullptr,
-                stream,
-                {0});
+                resources_.get(), config_.device, nullptr, stream, {0});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     } else {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
@@ -389,12 +380,7 @@ void GpuIndexIVFPQ::searchImpl_(
                 stream,
                 {(int)bitset.byte_size()});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     }
 }
 
@@ -421,18 +407,9 @@ void GpuIndexIVFPQ::searchThreadSafeImpl_(
 
     if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
-                resources_.get(),
-                config_.device,
-                nullptr,
-                stream,
-                {0});
+                resources_.get(), config_.device, nullptr, stream, {0});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     } else {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
@@ -441,12 +418,7 @@ void GpuIndexIVFPQ::searchThreadSafeImpl_(
                 stream,
                 {(int)bitset.byte_size()});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     }
 }
 

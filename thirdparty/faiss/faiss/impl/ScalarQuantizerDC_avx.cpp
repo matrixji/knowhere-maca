@@ -5,8 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <faiss/impl/ScalarQuantizerDC_avx.h>
 #include <faiss/impl/ScalarQuantizerCodec_avx.h>
+#include <faiss/impl/ScalarQuantizerDC_avx.h>
 
 namespace faiss {
 
@@ -51,8 +51,8 @@ Quantizer* sq_select_quantizer_avx(
 
 InvertedListScanner* sq_select_inverted_list_scanner_avx(
         MetricType mt,
-        const ScalarQuantizer *sq,
-        const Index *quantizer,
+        const ScalarQuantizer* sq,
+        const Index* quantizer,
         size_t dim,
         bool store_pairs,
         bool by_residual) {

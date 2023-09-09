@@ -123,16 +123,17 @@ void GpuIndexIVFFlat::copyFromWithoutCodes(
     FAISS_ASSERT(is_trained);
 
     // Copy our lists as well
-    index_.reset(new IVFFlat(resources_.get(),
-                             quantizer->getGpuData(),
-                             index->metric_type,
-                             index->metric_arg,
-                             false, // no residual
-                             nullptr, // no scalar quantizer
-                             ivfFlatConfig_.interleavedLayout,
-                             ivfFlatConfig_.indicesOptions,
-                             config_.memorySpace));
-    InvertedLists *ivf = index->invlists;
+    index_.reset(new IVFFlat(
+            resources_.get(),
+            quantizer->getGpuData(),
+            index->metric_type,
+            index->metric_arg,
+            false,   // no residual
+            nullptr, // no scalar quantizer
+            ivfFlatConfig_.interleavedLayout,
+            ivfFlatConfig_.indicesOptions,
+            config_.memorySpace));
+    InvertedLists* ivf = index->invlists;
 
     if (ReadOnlyArrayInvertedLists* rol =
                 dynamic_cast<ReadOnlyArrayInvertedLists*>(ivf)) {
@@ -179,7 +180,7 @@ void GpuIndexIVFFlat::copyToWithoutCodes(faiss::IndexIVFFlat* index) const {
     GpuIndexIVF::copyTo(index);
     index->code_size = this->d * sizeof(float);
 
-    InvertedLists *ivf = new ArrayInvertedLists(nlist, index->code_size);
+    InvertedLists* ivf = new ArrayInvertedLists(nlist, index->code_size);
     index->replace_invlists(ivf, true);
 
     // Copy the inverted lists
@@ -188,9 +189,7 @@ void GpuIndexIVFFlat::copyToWithoutCodes(faiss::IndexIVFFlat* index) const {
             auto listIndices = index_->getListIndices(i);
 
             ivf->add_entries_without_codes(
-                    i,
-                    listIndices.size(),
-                    listIndices.data());
+                    i, listIndices.size(), listIndices.data());
         }
     }
 }
@@ -328,18 +327,9 @@ void GpuIndexIVFFlat::searchImpl_(
 
     if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
-                resources_.get(),
-                config_.device,
-                nullptr,
-                stream,
-                {0});
+                resources_.get(), config_.device, nullptr, stream, {0});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     } else {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
@@ -348,12 +338,7 @@ void GpuIndexIVFFlat::searchImpl_(
                 stream,
                 {(int)bitset.byte_size()});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     }
 }
 
@@ -380,18 +365,9 @@ void GpuIndexIVFFlat::searchThreadSafeImpl_(
 
     if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
-                resources_.get(),
-                config_.device,
-                nullptr,
-                stream,
-                {0});
+                resources_.get(), config_.device, nullptr, stream, {0});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     } else {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
@@ -400,12 +376,7 @@ void GpuIndexIVFFlat::searchThreadSafeImpl_(
                 stream,
                 {(int)bitset.byte_size()});
         index_->query(
-                queries,
-                bitsetDevice,
-                nprobe,
-                k,
-                outDistances,
-                outLabels);
+                queries, bitsetDevice, nprobe, k, outDistances, outLabels);
     }
 }
 

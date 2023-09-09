@@ -71,8 +71,13 @@ struct MockThreadedIndex : public faiss::ThreadedIndex<IndexT> {
             : faiss::ThreadedIndex<IndexT>(threaded) {}
 
     void add(idx_t, const float*) override {}
-    void search(idx_t, const float*, idx_t, float*, idx_t*,
-                const faiss::BitsetView) const override {}
+    void search(
+            idx_t,
+            const float*,
+            idx_t,
+            float*,
+            idx_t*,
+            const faiss::BitsetView) const override {}
     void reset() override {}
 };
 

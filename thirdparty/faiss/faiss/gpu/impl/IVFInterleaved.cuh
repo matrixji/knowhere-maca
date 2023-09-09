@@ -101,10 +101,10 @@ __global__ void ivfInterleavedScan(
     __syncthreads();
 
     // How many vector blocks of 32 are in this list?
-    int numBlocks = utils::divUp(numVecs, 32);
+    int numBlocks = utils::divUp(numVecs, kWarpSize);
 
     // Number of EncodeT words per each dimension of block of 32 vecs
-    constexpr int bytesPerVectorBlockDim = Codec::kEncodeBits * 32 / 8;
+    constexpr int bytesPerVectorBlockDim = Codec::kEncodeBits * kWarpSize / 8;
     constexpr int wordsPerVectorBlockDim =
             bytesPerVectorBlockDim / sizeof(EncodeT);
     int wordsPerVectorBlock = wordsPerVectorBlockDim * dim;
@@ -196,7 +196,8 @@ __global__ void ivfInterleavedScan(
 
         if (valid) {
             Index::idx_t index = getUserIndex(listId, vec, listIndices, opt);
-            if (bitset.getSize(0) == 0 || (!(bitset[index >> 3] & (0x1 << (index & 0x7))))) {
+            if (bitset.getSize(0) == 0 ||
+                (!(bitset[index >> 3] & (0x1 << (index & 0x7))))) {
                 heap.addThreadQ(dist.reduce(), vec);
             }
         }
@@ -350,7 +351,8 @@ __global__ void ivfInterleavedScan(
                 } break;                                                     \
                 case QuantizerType::QT_4bit: {                               \
                     using CodecT = Codec<QuantizerType::QT_4bit, 1>;         \
-                    CodecT codec(scalarQ->code_size,                         \
+                    CodecT codec(                                            \
+                            scalarQ->code_size,                              \
                             scalarQ->gpuTrained.data(),                      \
                             scalarQ->gpuTrained.data() + dim);               \
                     IVFINT_RUN(                                              \
