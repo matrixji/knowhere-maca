@@ -13,11 +13,12 @@
 #include "faiss/IndexFlat.h"
 #include "faiss/gpu/GpuCloner.h"
 #include "faiss/index_io.h"
-#include "index/flat_gpu/flat_gpu_config.h"
+#include "index/gpu/flat_gpu/flat_gpu_config.h"
 #include "index/gpu/gpu_res_mgr.h"
 #include "io/FaissIO.h"
 #include "knowhere/factory.h"
 #include "knowhere/log.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 
@@ -29,9 +30,9 @@ class GpuFlatIndexNode : public IndexNode {
     Status
     Train(const DataSet& dataset, const Config& cfg) override {
         const GpuFlatConfig& f_cfg = static_cast<const GpuFlatConfig&>(cfg);
-        auto metric = Str2FaissMetricType(f_cfg.metric_type);
+        auto metric = Str2FaissMetricType(f_cfg.metric_type.value());
         if (!metric.has_value()) {
-            LOG_KNOWHERE_WARNING_ << "metric type error, " << f_cfg.metric_type;
+            LOG_KNOWHERE_WARNING_ << "metric type error, " << f_cfg.metric_type.value();
             return metric.error();
         }
         index_ = std::make_unique<faiss::IndexFlat>(dataset.GetDim(), metric.value());
@@ -47,7 +48,7 @@ class GpuFlatIndexNode : public IndexNode {
             // need not copy index from CPU to GPU for IDMAP
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
-            return expected<DataSetPtr>::Err(Status::faiss_inner_error, e.what());
+            return Status::faiss_inner_error;
         }
         return Status::success;
     }
@@ -62,15 +63,16 @@ class GpuFlatIndexNode : public IndexNode {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
-        auto len = f_cfg.k * nq;
+        auto len = f_cfg.k.value() * nq;
         int64_t* ids = nullptr;
         float* dis = nullptr;
         try {
             ids = new (std::nothrow) int64_t[len];
             dis = new (std::nothrow) float[len];
-
-            ResScope rs(res_, false);
-            index_->search(nq, (const float*)x, f_cfg.k, dis, ids, bitset);
+            auto gpu_res = GPUResMgr::GetInstance().GetRes();
+            ResScope rs(gpu_res, true);
+            index_->search(nq, (const float*)x, f_cfg.k.value(), dis, ids, bitset);
+            res_ = gpu_res;
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
@@ -78,12 +80,12 @@ class GpuFlatIndexNode : public IndexNode {
             return expected<DataSetPtr>::Err(Status::faiss_inner_error, e.what());
         }
 
-        return GenResultDataSet(nq, f_cfg.k, ids, dis);
+        return GenResultDataSet(nq, f_cfg.k.value(), ids, dis);
     }
 
     expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        return Status::not_implemented;
+        return expected<DataSetPtr>::Err(Status::not_implemented, "");
     }
 
     expected<DataSetPtr>
@@ -98,7 +100,7 @@ class GpuFlatIndexNode : public IndexNode {
                 int64_t id = in_ids[i];
                 index_->reconstruct(id, xq + i * dim);
             }
-            return GenResultDataSet(xq);
+            return GenResultDataSet(nq, dim, xq);
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return expected<DataSetPtr>::Err(Status::faiss_inner_error, e.what());
@@ -107,14 +109,14 @@ class GpuFlatIndexNode : public IndexNode {
 
     expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
-        return Status::not_implemented;
+        return expected<DataSetPtr>::Err(Status::not_implemented, "");
     }
 
     Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "serilalization on empty index.";
-            expected<DataSetPtr>::Err(Status::empty_index, "index not loaded");
+            return Status::empty_index;
         }
         try {
             MemoryIOWriter writer;
@@ -124,7 +126,7 @@ class GpuFlatIndexNode : public IndexNode {
             binset.Append(Type(), data, writer.rp);
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
-            return expected<DataSetPtr>::Err(Status::faiss_inner_error, e.what());
+            return Status::faiss_inner_error;
         }
         return Status::success;
     }
@@ -149,7 +151,7 @@ class GpuFlatIndexNode : public IndexNode {
             res_ = gpu_res;
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
-            return expected<DataSetPtr>::Err(Status::faiss_inner_error, e.what());
+            return Status::faiss_inner_error;
         }
 
         return Status::success;
@@ -186,11 +188,17 @@ class GpuFlatIndexNode : public IndexNode {
         return knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP;
     }
 
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return !IsMetricType(metric_type, metric::COSINE);
+    }
+
  private:
     mutable ResWPtr res_;
     std::unique_ptr<faiss::Index> index_;
 };
 
 KNOWHERE_REGISTER_GLOBAL(GPU_FAISS_FLAT, [](const Object& object) { return Index<GpuFlatIndexNode>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(GPU_FLAT, [](const Object& object) { return Index<GpuFlatIndexNode>::Create(object); });
 
 }  // namespace knowhere
